@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css"
+          integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">    
+    <title>Home</title>
+</head>
+<body>
+    <!-- Navigation bar -->
+    <div> 
+        <nav class="navbar navbar-expand-lg bg-body-tertiary" >
+        <div class="container-fluid">
+            <a class="navbar-brand" href="#">Nittany Auction</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarSupportedContent">
+            <ul class="navbar-nav me-auto mb-2 mb-lg-0 mr-auto">
+                <li class="nav-item">
+                <a class="nav-link active" aria-current="page" href="/">Home</a>
+                </li>
+                <li class="nav-item">
+                <a class="nav-link" href="#">About</a>
+            </ul>
+            <div class="form-inline my-2 my-lg-0">
+                <a href="/login" class="btn btn btn-primary mr-2">Login</a>
+                <a href="/signup" class="btn btn-outline-secondary">Sign Up</a>
+            </div>            
+            </div>
+        </div>
+        </nav>        
+    </div>
+
+    <!-- Main Content -->
+    <div class="container mt-5 text-center d-flex align-items-center" style="min-height: 60vh; max-width: 70%;">
+        <div class="row align-items-center w-100">
+            <div class="col-md-6 text-md-left text-center">
+                <h1 class="display-3">Welcome to Nittany Auction</h1>
+                <p class="lead">A platform for students to sell and buy items.</p>
+                <button class="btn btn-primary">Get Started</button>
+                <a href="{{ url_for('signup') }}" class="btn btn-primary">Get Started</a>
+            </div> 
+            <div class="col-md-6 text-center">
+                <img src="{{ url_for('static', filename='images/ecommerce.png') }}" 
+                     alt="Auction" class="img-fluid"
+                     style="max-width: 110%;">
+
+            </div>
+        </div>
+    </div>     
+</body>

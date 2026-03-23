@@ -106,17 +106,22 @@ def signup():
             cur.execute("""INSERT INTO Bidders (email, first_name, last_name, age, home_address_id, major)
                         VALUES (?, ?, ?, ?, ?, ?)""",
                         (email, first_name, last_name, None, None, None))
+
+            conn.commit()
+            conn.close()
+
+            return redirect(url_for('bidder_dashboard'))
+
         # We assume non-LSU email = Sellers
         else:
             cur.execute("""INSERT INTO Sellers (email, bank_routing_number, bank_account_number, balance)
                         VALUES (?, ?, ?, ?)""",
                         (email, None, None, 0.00))
 
-        conn.commit()
-        conn.close()
+            conn.commit()
+            conn.close()
 
-        return redirect(url_for('login'))
-
+            return redirect(url_for('seller_dashboard'))
 
     return render_template('signup.html')
 

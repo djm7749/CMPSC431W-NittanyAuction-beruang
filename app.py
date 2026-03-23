@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, session
+from flask import Flask, render_template, request, session, redirect, url_for
 import sqlite3
 import hashlib
 from init_db import init_db
@@ -61,23 +61,81 @@ def login():
         if is_bidder:
             session['user_email'] = email
             session['role'] = 'Bidder'
-            return render_template('bidder.html')
+            return redirect(url_for('bidder_dashboard'))
 
         elif is_seller:
             session['user_email'] = email
             session['role'] = 'Seller'
-            return render_template('seller.html')
+            return redirect(url_for('seller_dashboard'))
 
         elif is_helpdesk:
             session['user_email'] = email
             session['role'] = 'Helpdesk'
-            return render_template('helpdesk.html')
+            return redirect(url_for('helpdesk_dashboard'))
 
     return render_template('login.html')
 
 @app.route('/signup', methods=['GET', 'POST'])
 def signup():
+    if request.method == 'POST':
+        email = request.form['email'].strip().lower()
+        password = request.form['password'].strip()
+        name = request.form['name'].strip()
+
+        conn = db_connect()
+        cur = conn.cursor()
+
+        # Check for existing user
+        cur.execute("SELECT * FROM Users WHERE email = ?", (email,))
+        existing_user = cur.fetchone()
+
+        if existing_user:
+            conn.close()
+            return render_template('signup.html', error='Email already registered')
+
+        hashed_input = hashlib.sha256(password.encode()).hexdigest()
+
+        cur.execute("INSERT INTO Users (email, password_hash) VALUES (?, ?)", (email, hashed_input))
+
+        # We assume LSU email = Bidder
+        if email.endswith('@lsu.edu'):
+            parts = name.split()
+            first_name = parts[0] if len(parts) > 0 else ''
+            last_name = ' '.join(parts[1:]) if len(parts) > 1 else ''
+
+            cur.execute("""INSERT INTO Bidders (email, first_name, last_name, age, home_address_id, major)
+                        VALUES (?, ?, ?, ?, ?, ?)""",
+                        (email, first_name, last_name, None, None, None))
+
+            conn.commit()
+            conn.close()
+
+            return redirect(url_for('bidder_dashboard'))
+
+        # We assume non-LSU email = Sellers
+        else:
+            cur.execute("""INSERT INTO Sellers (email, bank_routing_number, bank_account_number, balance)
+                        VALUES (?, ?, ?, ?)""",
+                        (email, None, None, 0.00))
+
+            conn.commit()
+            conn.close()
+
+            return redirect(url_for('seller_dashboard'))
+
     return render_template('signup.html')
+
+@app.route('/bidder_dashboard')
+def bidder_dashboard():
+    return render_template('bidder.html')
+
+@app.route('/seller_dashboard')
+def seller_dashboard():
+    return render_template('seller.html')
+
+@app.route('/helpdesk_dashboard')
+def helpdesk_dashboard():
+    return render_template('helpdesk.html')
 
 if __name__ == '__main__':
     app.run()

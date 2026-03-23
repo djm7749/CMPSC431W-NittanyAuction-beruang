@@ -1,14 +1,17 @@
 from flask import Flask, render_template, request, session
-import sqlite3 as sql
+import sqlite3
 import hashlib
+from init_db import init_db
 
 app = Flask(__name__)
+app.secret_key = "abc123"
 
 DB_NAME = 'auction.db'
 init_db()
 
 def db_connect():
-    conn = sql.connect(DB_NAME)
+    conn = sqlite3.connect(DB_NAME)
+    conn.row_factory = sqlite3.Row
     return conn
   
 @app.route('/')
@@ -30,7 +33,7 @@ def login():
         cur = conn.cursor()
 
         # Find user (general)
-        cur.execute("SELECT * FROM users WHERE email = ?", (email,))
+        cur.execute("SELECT * FROM Users WHERE email = ?", (email,))
         user = cur.fetchone()
 
         if user is None:
@@ -39,7 +42,7 @@ def login():
 
         # Check hashed password
         hashed_input = hashlib.sha256(password.encode()).hexdigest()
-        if user['password'] != hashed_input:
+        if user['password_hash'] != hashed_input:
             conn.close()
             return render_template('login.html')
 

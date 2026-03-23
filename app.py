@@ -4,11 +4,13 @@ import hashlib
 
 app = Flask(__name__)
 
-DATABASE = 'something.db'
+DB_NAME = 'auction.db'
+init_db()
 
 def db_connect():
-    conn = sql.connect(DATABASE)
+    conn = sql.connect(DB_NAME)
     return conn
+  
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -76,3 +78,4 @@ def signup():
 
 if __name__ == '__main__':
     app.run()
+

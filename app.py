@@ -38,13 +38,13 @@ def login():
 
         if user is None:
             conn.close()
-            return render_template('login.html')
+            return render_template('login.html', error="Email not found")
 
         # Check hashed password
         hashed_input = hashlib.sha256(password.encode()).hexdigest()
         if user['password_hash'] != hashed_input:
             conn.close()
-            return render_template('login.html')
+            return render_template('login.html', error="Password incorrect")
 
         # Role detection
         cur.execute("SELECT * FROM Bidders WHERE email = ?", (email,))
@@ -72,6 +72,9 @@ def login():
             session['user_email'] = email
             session['role'] = 'Helpdesk'
             return redirect(url_for('helpdesk_dashboard'))
+
+        else:
+            return render_template('login.html', error="Role not found")
 
     return render_template('login.html')
 

@@ -94,9 +94,9 @@ def init_db():
 
     # Populate Sellers
     try:
-        bidders_df = pd.read_csv(DATASETPATH + "Sellers.csv")
+        sellers_df = pd.read_csv(DATASETPATH + "Sellers.csv")
 
-        for _, row in bidders_df.iterrows():
+        for _, row in sellers_df.iterrows():
             cursor.execute("""
                 INSERT INTO Sellers (email, bank_routing_number, bank_account_number, balance)
                 VALUES (?, ?, ?, ?)

@@ -1,8 +1,18 @@
 from flask import Flask, render_template, request
-import sqlite3 as sql
+import sqlite3
+import hashlib
+from init_db import init_db
+
+DB_NAME = 'auction.db'
+init_db()
 
 app = Flask(__name__)
 
+def hash_password(password):
+    return hashlib.sha256(password.encode('utf-8')).hexdigest()
+
+def get_db():
+    return sqlite3.connect(DB_NAME);
 
 @app.route('/')
 def index():
@@ -23,3 +33,4 @@ def signup():
 
 if __name__ == '__main__':
     app.run()
+

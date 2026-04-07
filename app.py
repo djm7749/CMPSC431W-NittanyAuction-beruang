@@ -58,20 +58,20 @@ def login():
 
         conn.close()
 
-        if is_bidder:
+        if is_helpdesk:
             session['user_email'] = email
-            session['role'] = 'Bidder'
-            return redirect(url_for('bidder_dashboard'))
+            session['role'] = 'Helpdesk'
+            return redirect(url_for('helpdesk_dashboard'))
 
         elif is_seller:
             session['user_email'] = email
             session['role'] = 'Seller'
             return redirect(url_for('seller_dashboard'))
 
-        elif is_helpdesk:
+        elif is_bidder:
             session['user_email'] = email
-            session['role'] = 'Helpdesk'
-            return redirect(url_for('helpdesk_dashboard'))
+            session['role'] = 'Bidder'
+            return redirect(url_for('bidder_dashboard'))
 
         else:
             return render_template('login.html', error="Role not found")

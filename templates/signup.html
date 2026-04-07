@@ -2,98 +2,154 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css"
-          integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh"
-          crossorigin="anonymous">
+
+    <link rel="stylesheet"
+          href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css">
+
     <title>Sign Up</title>
 </head>
-<body>
-    <!-- Navigation bar -->
-    <div>
-        <nav class="navbar navbar-expand-lg bg-body-tertiary">
-            <div class="container-fluid">
-                <a class="navbar-brand" href="/">Nittany Auction</a>
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
-                        data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent"
-                        aria-expanded="false" aria-label="Toggle navigation">
-                    <span class="navbar-toggler-icon"></span>
-                </button>
-                <div class="collapse navbar-collapse" id="navbarSupportedContent">
-                    <ul class="navbar-nav me-auto mb-2 mb-lg-0 mr-auto">
-                        <li class="nav-item">
-                            <a class="nav-link" href="/">Home</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="#">About</a>
-                        </li>
-                    </ul>
-                    <div class="form-inline my-2 my-lg-0">
-                        <a href="/login" class="btn btn-primary mr-2">Login</a>
-                        <a href="/signup" class="btn btn-outline-secondary">Sign Up</a>
-                    </div>
-                </div>
-            </div>
-        </nav>
-    </div>
 
-    <!-- Main Content -->
-    <div class="container mt-5 pb-5 text-center d-flex align-items-center" style="max-width: 70%; min-height: 80vh;">
-        <div class="row align-items-start w-100">
-            <div class="col-md-6 text-center d-none d-md-block">
-                <img src="{{ url_for('static', filename='images/login.svg') }}"
-                     class="img-fluid" alt="Sign-up illustration" style="max-width: 110%;">
-            </div>
-            <div class="col-md-6 text-md-left text-center">
-                <h1 class="display-4 mb-4">Sign Up</h1>
-                <form method="post" action="{{ url_for('signup') }}">
-                    <div class="form-group text-left">
-                        <label for="signup-email">Email</label>
-                        <input type="email" class="form-control" id="signup-email" name="email"
-                               placeholder="username@example.com">
-                    </div>
-                    <div class="form-group text-left">
-                        <label for="signup-password">Password</label>
-                        <input type="password" class="form-control" id="signup-password" name="password"
-                               placeholder="Choose a password">
-                    </div>
-                    <div class="form-group text-left">
-                        <label for="signup-name">Full name or business name</label>
-                        <input type="text" class="form-control" id="signup-name" name="name"
-                               placeholder="Danish Afiq OR Panera Bread">
-                    </div>
-                    <div class="form-group text-left">
-                        <label for="signup-street">Street address</label>
-                        <input type="text" class="form-control" id="signup-street" name="street"
-                               placeholder="123 College Ave">
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group col-md-6 text-left">
-                            <label for="signup-city">City</label>
-                            <input type="text" class="form-control" id="signup-city" name="city" placeholder="City">
-                        </div>
-                        <div class="form-group col-md-3 text-left">
-                            <label for="signup-state">State</label>
-                            <input type="text" class="form-control" id="signup-state" name="state"
-                                   placeholder="PA">
-                        </div>
-                        <div class="form-group col-md-3 text-left">
-                            <label for="signup-zip">ZIP code</label>
-                            <input type="text" class="form-control" id="signup-zip" name="zipcode"
-                                   placeholder="16801" inputmode="numeric" maxlength="10">
-                        </div>
-                    </div>
-                    <div class="form-group text-left">
-                        <label for="signup-phone">Phone number</label>
-                        <input type="tel" class="form-control" id="signup-phone" name="phone"
-                               placeholder="(814) 555-0100">
-                    </div>
-                    <button type="submit" class="btn btn-primary btn-lg btn-block mt-2">Create account</button>
-                    <p class="mt-3 mb-0">Already have an account? <a href="/login">Sign in</a></p>
-                </form>
-            </div>
+<body>
+
+<!-- NAVBAR -->
+<nav class="navbar navbar-expand-lg navbar-light bg-light">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="/">Nittany Auction</a>
+
+        <div class="ml-auto">
+            <a href="/login" class="btn btn-primary mr-2">Login</a>
+            <a href="/signup" class="btn btn-outline-secondary">Sign Up</a>
         </div>
     </div>
+</nav>
+
+<!-- MAIN -->
+<div class="container mt-5 pb-5 text-center d-flex align-items-center"
+     style="max-width: 70%; min-height: 80vh;">
+
+    <div class="row align-items-start w-100">
+
+        <!-- IMAGE -->
+        <div class="col-md-6 d-none d-md-block">
+            <img src="{{ url_for('static', filename='images/login.svg') }}"
+                 class="img-fluid" alt="Sign-up illustration">
+        </div>
+
+        <!-- FORM -->
+        <div class="col-md-6 text-md-left text-center">
+
+            <h1 class="display-4 mb-4">Sign Up</h1>
+
+            <!-- ERROR MESSAGE -->
+            {% if error %}
+            <div class="alert alert-danger">
+                {{ error }}
+            </div>
+            {% endif %}
+
+            <!-- FORM -->
+            <form method="POST" action="{{ url_for('signup') }}">
+
+                <!-- EMAIL -->
+                <div class="form-group text-left">
+                    <label>Email</label>
+                    <input type="email"
+                           class="form-control"
+                           name="email"
+                           placeholder="username@example.com"
+                           required>
+                </div>
+
+                <!-- PASSWORD -->
+                <div class="form-group text-left">
+                    <label>Password</label>
+                    <input type="password"
+                           class="form-control"
+                           name="password"
+                           placeholder="Choose a password"
+                           minlength="6"
+                           required>
+                </div>
+
+                <!-- NAME -->
+                <div class="form-group text-left">
+                    <label>Full name or business name</label>
+                    <input type="text"
+                           class="form-control"
+                           name="name"
+                           placeholder="John Doe or Business Name"
+                           required>
+                </div>
+
+                <!-- STREET -->
+                <div class="form-group text-left">
+                    <label>Street address</label>
+                    <input type="text"
+                           class="form-control"
+                           name="street"
+                           placeholder="123 College Ave"
+                           required>
+                </div>
+
+                <!-- CITY / STATE / ZIP -->
+                <div class="form-row">
+
+                    <div class="form-group col-md-6 text-left">
+                        <label>City</label>
+                        <input type="text"
+                               class="form-control"
+                               name="city"
+                               placeholder="City"
+                               required>
+                    </div>
+
+                    <div class="form-group col-md-3 text-left">
+                        <label>State</label>
+                        <input type="text"
+                               class="form-control"
+                               name="state"
+                               placeholder="PA"
+                               required>
+                    </div>
+
+                    <div class="form-group col-md-3 text-left">
+                        <label>ZIP code</label>
+                        <input type="text"
+                               class="form-control"
+                               name="zipcode"
+                               placeholder="16801"
+                               required>
+                    </div>
+
+                </div>
+
+                <!-- PHONE -->
+                <div class="form-group text-left">
+                    <label>Phone number</label>
+                    <input type="tel"
+                           class="form-control"
+                           name="phone"
+                           placeholder="(814) 555-0100"
+                           required>
+                </div>
+
+                <!-- SUBMIT -->
+                <button type="submit"
+                        class="btn btn-primary btn-lg btn-block mt-2">
+                    Create account
+                </button>
+
+                <p class="mt-3 mb-0">
+                    Already have an account?
+                    <a href="/login">Sign in</a>
+                </p>
+
+            </form>
+
+        </div>
+    </div>
+</div>
+
 </body>
 </html>

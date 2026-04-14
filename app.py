@@ -127,16 +127,30 @@ def signup():
 
 @app.route('/bidder_dashboard')
 def bidder_dashboard():
-    return render_template('bidder.html')
+    items = [
+        {"name": "Laptop", "price": 500, "image": "default-auction.jpg"},
+        {"name": "Phone", "price": 300, "image": None},
+        {"name": "Headphones", "price": 150, "image": None},
+        {"name": "Camera", "price": 800, "image": None},
+        {"name": "Tablet", "price": 400, "image": None},
+        {"name": "Monitor", "price": 600, "image": None}
+    ]
+    return render_template('bidder.html', items=items)
 
 @app.route('/seller_dashboard')
 def seller_dashboard():
-    return render_template('seller.html')
+    items = [
+        {"name": "Laptop", "price": 500, "image": "default-auction.jpg"},
+        {"name": "Phone", "price": 300, "image": None},
+        {"name": "Headphones", "price": 150, "image": None},
+        {"name": "Monitor", "price": 600, "image": None}
+    ]
+    return render_template('seller.html', items=items)
 
 @app.route('/helpdesk_dashboard')
 def helpdesk_dashboard():
     return render_template('helpdesk.html')
 
 if __name__ == '__main__':
-    app.run()
+    app.run(debug=True)         # Set debug=True for development to allow auto-reloading 
 

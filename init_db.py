@@ -60,6 +60,44 @@ def init_db():
        );
     """)
 
+    cursor.execute("""
+        CREATE TABLE Categories(
+            category_name TEXT PRIMARY KEY,
+            parent_category TEXT,
+            FOREIGN KEY (parent_category) REFERENCES Categories (category_name)
+        );
+    """)
+
+    cursor.execute("""
+       CREATE TABLE Auction_Listings(
+           seller_email TEXT,
+           listing_id INTEGER,
+           category TEXT,
+           auction_title TEXT,
+           product_name TEXT,
+           product_description TEXT,
+           quantity INTEGER,
+           reserve_price REAL,
+           max_bids INTEGER,
+           status INTEGER DEFAULT 1,    
+           PRIMARY KEY (seller_email, listing_id),
+           FOREIGN KEY (seller_email) REFERENCES Sellers (email),
+           FOREIGN KEY (category) REFERENCES Categories (category_name)
+       );
+    """)
+
+    cursor.execute("""
+       CREATE TABLE Bids(
+           bid_id INTEGER PRIMARY KEY AUTOINCREMENT,
+           seller_email TEXT,
+           listing_id INTEGER,
+           bidder_email TEXT,
+           bid_price REAL,
+           FOREIGN KEY (seller_email, listing_id) REFERENCES Auction_Listings (seller_email, listing_id),
+           FOREIGN KEY (bidder_email) REFERENCES Bidders (email)
+       );
+    """)
+
     print("Tables created.")
 
     # Populate Users
@@ -119,6 +157,48 @@ def init_db():
         print("Helpdesk loaded.")
     except Exception as e:
         print("Error loading Helpdesk:", e)
+
+    # Populate Categories
+    try:
+        categories_df = pd.read_csv(DATASETPATH + "Categories.csv")
+
+        for _, row in categories_df.iterrows():
+            cursor.execute("""
+               INSERT INTO Categories (category_name, parent_category)
+               VALUES (?, ?)
+               """, (row["category_name"],row["parent_category"]))
+
+        print("Categories loaded.")
+    except Exception as e:
+        print("Error loading Categories:", e)
+
+    # Populate Auction_Listings
+    try:
+        listings_df = pd.read_csv(DATASETPATH + "Auction_Listings.csv")
+
+        for _, row in listings_df.iterrows():
+            cursor.execute("""
+                           INSERT INTO Auction_Listings (seller_email, listing_id, category,auction_title, product_name, product_description,quantity, reserve_price, max_bids, status)
+                           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                           """, (row["Seller_Email"], row["Listing_ID"], row["Category"], row["Auction_Title"], row["Product_Name"], row["Product_Description"], row["Quantity"], row["Reserve_Price"], row["Max_bids"], row.get("Status", 1)))
+
+        print("Auction Listings loaded.")
+    except Exception as e:
+        print("Error loading Auction Listings:", e)
+
+    # Populate Bids
+    try:
+        bids_df = pd.read_csv(DATASETPATH + "Bids.csv")
+
+        for _, row in bids_df.iterrows():
+            cursor.execute("""
+                           INSERT INTO Bids (seller_email, listing_id, bidder_email, bid_price)
+                           VALUES (?, ?, ?, ?)
+                           """, (row["Seller_Email"],row["Listing_ID"],row["Bidder_Email"],row["Bid_Price"]))
+
+        print("Bids loaded.")
+    except Exception as e:
+        print("Error loading Bids:", e)
 
     conn.commit()
     conn.close()

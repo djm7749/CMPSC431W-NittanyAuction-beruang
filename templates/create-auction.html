@@ -9,7 +9,7 @@
 </head>
 <body>
     <!-- NAVBAR -->
-    <nav class="navbar navbar-expand-lg navbar-light bg-light"
+    <nav class="navbar navbar-expand-lg navbar-light bg-light" >
         <div class="container-fluid">
 
             <a class="navbar-brand text-dark" style="font-weight: bold;" href="/">NITTANY AUCTION</a>
@@ -49,9 +49,17 @@
                 <textarea class="form-control" id="description" name="description" rows="3" placeholder="Enter item description" required></textarea>
             </div>
             <div class="form-group text-left">
-                <label for="starting_price">Starting Price</label>
+                <label for="condition">Condition</label>
+                <textarea class="form-control" id="description" name="description" rows="3" placeholder="Enter item condition" required></textarea>
+            </div>
+
+            <!-- Daniel: reserve place to implement choose from category-->
+
+            <div class="form-group text-left">
+                <label for="reserve_price">Reserve Price</label>
                 <input type="number" step="0.01" class="form-control" id="starting_price" name="starting_price" placeholder="Enter starting price" required>
             </div>
+
             <div class="form-group text-left">
                 <label for="image">Image</label>
                 <input type="file" class="form-control-file" id="image" name="image">

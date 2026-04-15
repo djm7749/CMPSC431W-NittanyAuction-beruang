@@ -127,14 +127,44 @@ def signup():
 
 @app.route('/bidder_dashboard')
 def bidder_dashboard():
-    items = [
-        {"name": "Laptop", "price": 500, "image": "default-auction.jpg"},
-        {"name": "Phone", "price": 300, "image": None},
-        {"name": "Headphones", "price": 150, "image": None},
-        {"name": "Camera", "price": 800, "image": None},
-        {"name": "Tablet", "price": 400, "image": None},
-        {"name": "Monitor", "price": 600, "image": None}
-    ]
+        # items = [
+        #     {"name": "Laptop", "price": 500, "image": "default-auction.jpg"},
+        #     {"name": "Phone", "price": 300, "image": None},
+        #     {"name": "Headphones", "price": 150, "image": None},
+        #     {"name": "Camera", "price": 800, "image": None},
+        #     {"name": "Tablet", "price": 400, "image": None},
+        #     {"name": "Monitor", "price": 600, "image": None}
+        # ]
+
+    conn = db_connect()
+    cur = conn.cursor()
+
+    cursor.execute("""
+        SELECT 
+            a.Listing_ID,
+            a.Product_Name AS name,
+            (   
+                SELECT MAX(Bid_Price)
+                FROM Bidders b
+                WHERE b.Listing_ID = a.Listing_ID
+            ) AS price,
+        FROM Auction_Listings a
+        WHERE a.status = 1
+        ORDER BY a.Listing_ID
+        LIMIT 10
+    """)
+
+    rows = cursor.fetchall()
+    conn.close()
+
+    items = []
+    for row in rows:
+        items.append({
+            "name": row["name"],
+            "price": row["price"],
+            "image": "default-auction.jpg"
+        })
+
     return render_template('bidder.html', items=items)
 
 @app.route('/seller_dashboard')

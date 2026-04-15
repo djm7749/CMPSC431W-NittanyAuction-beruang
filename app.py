@@ -130,16 +130,72 @@ def signup():
 
 @app.route('/bidder_dashboard')
 def bidder_dashboard():
-    return render_template('bidder.html')
+        # items = [
+        #     {"name": "Laptop", "price": 500, "image": "default-auction.jpg"},
+        #     {"name": "Phone", "price": 300, "image": None},
+        #     {"name": "Headphones", "price": 150, "image": None},
+        #     {"name": "Camera", "price": 800, "image": None},
+        #     {"name": "Tablet", "price": 400, "image": None},
+        #     {"name": "Monitor", "price": 600, "image": None}
+        # ]
+
+    conn = db_connect()
+    cur = conn.cursor()
+
+    cursor.execute("""
+        SELECT 
+            a.Listing_ID,
+            a.Product_Name AS name,
+            (   
+                SELECT MAX(Bid_Price)
+                FROM Bidders b
+                WHERE b.Listing_ID = a.Listing_ID
+            ) AS price,
+        FROM Auction_Listings a
+        WHERE a.status = 1
+        ORDER BY a.Listing_ID
+        LIMIT 10
+    """)
+
+    rows = cursor.fetchall()
+    conn.close()
+
+    items = []
+    for row in rows:
+        items.append({
+            "name": row["name"],
+            "price": row["price"],
+            "image": "default-auction.jpg"
+        })
+
+    return render_template('bidder.html', items=items)
 
 @app.route('/seller_dashboard')
 def seller_dashboard():
-    return render_template('seller.html')
+    items = [
+        {"name": "Laptop", "price": 500, "image": "default-auction.jpg"},
+        {"name": "Phone", "price": 300, "image": None},
+        {"name": "Headphones", "price": 150, "image": None},
+        {"name": "Monitor", "price": 600, "image": None}
+    ]
+    return render_template('seller.html', items=items)
 
 @app.route('/helpdesk_dashboard')
 def helpdesk_dashboard():
     return render_template('helpdesk.html')
 
+
+@app.route('/create_auction', methods=['GET', 'POST'])
+def create_auction():
+    if request.method == 'POST':
+        # to be implemented: form handling to create a new auction
+        pass
+    return render_template('create-auction.html')
+
+@app.route('/user_account')
+def user_account():
+    return render_template('user-account.html')
+
 if __name__ == '__main__':
-    app.run()
+    app.run(debug=True)         # Set debug=True for development to allow auto-reloading 
 

@@ -3,8 +3,72 @@
 <head>
     <meta charset="UTF-8">
     <title>Seller Redirect Here</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css"
+          integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
 </head>
 <body>
+    <!-- NAVBAR -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-light"
+        <div class="container-fluid">
 
+            <a class="navbar-brand text-dark" style="font-weight: bold;" href="/">NITTANY AUCTION</a>
+
+            <div class="d-flex">
+                <a href="" class="nav-link text-dark">My Listings</a>
+                <a href="" class="nav-link text-dark">Category</a>
+            </div>
+
+            <div class="mx-auto">   
+                <form class="form-inline my-2 my-lg-0">
+                    <input class="form-control mr-sm-2" type="search" placeholder="Search" aria-label="Search">
+                    <button class="btn btn-outline-success my-2 my-sm-0" type="submit">Search</button>
+                </form>
+            </div>
+
+            <div>
+                <a href="" class="btn btn-primary mr-2">My Account</a>
+                <a href="/" class="btn btn-outline-secondary">Logout</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- MAIN CONTENT -->
+    <div class="container mt-4 bg-light p-4 rounded">
+
+        <div class="d-flex justify-content-between align-items-center">
+            <h2>My Auctions</h2>
+            <a href="/create_auction" class="btn btn-success">Create New Auction</a>
+        </div>
+
+        <p>Here you can create and manage your auctions.</p>
+
+    <!-- LIST OF AUCTIONS -->
+    <div class="row justify-content-start mt-3">
+        {% for item in items %}
+        <div class="col-lg-3 mb-3 d-flex justify-content-center">
+
+            <div class="card auction-card">
+                <div class="card mb-4">
+            
+                    <img 
+                        src="{{ url_for('static', filename='images/' + (item.image if item.image else 'default-auction.jpg')) }}" 
+                        class="card-img-top">
+
+                    <div class="card-body">
+                        <h5 class="card-title">{{ item.name }}</h5>
+                        <p class="card-text">Current Bid: ${{ item.price }}</p>
+                        <a href="#" class="btn btn-primary">Place Bid</a>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    {% endfor %}
+    </div>
+    
+
+
+        
 </body>
 </html>

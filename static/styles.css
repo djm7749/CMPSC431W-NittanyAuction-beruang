@@ -1,0 +1,46 @@
+
+
+/* --------------- Auction Card ---------------*/
+
+/* CARD CONTAINER */
+.auction-card {
+  width: 18rem;
+  border: none;
+  border-radius: 15px;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+/* HOVER EFFECT */
+.auction-card:hover {
+  transform: scale(1.01)
+}
+
+/* IMAGE */
+.auction-card img {
+  height: 180px;
+  object-fit: contain;
+}
+
+/* CARD BODY */
+.auction-card .card-body {
+  padding: 20px;
+}
+
+/* TITLE */
+.auction-card .card-title {
+  font-weight: 600;
+  font-size: 18px;
+}
+
+/* PRICE */
+.auction-card .card-text {
+  font-size: 1rem;
+  font-weight: bold;
+}
+
+/* BUTTON */
+.auction-card .btn {
+  width: 100%;
+  border-radius: 10px;
+}

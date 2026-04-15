@@ -8,6 +8,10 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
 </head>
 <body>
+
+
+    <!-- Daniel : Navbar need to change according to user role, right? -->
+     
     <!-- NAVBAR -->
     <nav class="navbar navbar-expand-lg navbar-light bg-light"
         <div class="container-fluid">
@@ -18,7 +22,7 @@
                 <a href="" class="nav-link text-dark">Browse</a>
                 <a href="" class="nav-link text-dark">My Bids</a>
                 <a href="" class="nav-link text-dark">Category</a>
-            </div> 
+            </div>
 
             <div class="mx-auto">   
                 <form class="form-inline my-2 my-lg-0">
@@ -28,50 +32,29 @@
             </div>
 
             <div>
-                <a href="/user_account" class="btn btn-primary mr-2">My Account</a>
+                <a href="" class="btn btn-primary mr-2">My Account</a>
                 <a href="/" class="btn btn-outline-secondary">Logout</a>
             </div>
         </div>
     </nav>
 
     <!-- MAIN CONTENT -->
-    <div class="container mt-4">
-        <h1>Bidder Dashboard</h1>
-        <p>Welcome to your bidder dashboard!</p>
-    </div>
+
+    <!-- DELETE THIS PART LATER -->
+    <!-- <div class="container mt-4">
+        <h1>User Account</h1>
+        <p>Welcome to your user account!</p>
+    </div> -->
+    <!-- DELETE THIS PART LATER -->
 
     <div class="container mt-4 bg-light p-4 rounded">
-        <h2>Current Bids</h2>
-        <p>Here you can see all your current bids.</p>
+        <h2>Account Information</h2>
+        <p>Here you can view and edit your account details.</p>
     </div>
 
-    <div class="container mt-4 bg-light p-4 rounded">
-        <h2>Browse Auctions</h2>
-        <p>Here you can browse ongoing auctions and your bids.</p>
 
-    <!-- LIST OF AUCTIONS -->
-    <div class="row justify-content-start mt-3">
-        {% for item in items %}
-        <div class="col-lg-3 mb-3 d-flex justify-content-center">
 
-            <div class="card auction-card">
-                <div class="card mb-4">
-            
-                    <img 
-                        src="{{ url_for('static', filename='images/' + (item.image if item.image else 'default-auction.jpg')) }}" 
-                        class="card-img-top">
 
-                    <div class="card-body">
-                        <h5 class="card-title">{{ item.name }}</h5>
-                        <p class="card-text">Current Bid: ${{ item.price }}</p>
-                        <a href="#" class="btn btn-primary">Place Bid</a>
-                    </div>
-
-                </div>
-            </div>
-        </div>
-    {% endfor %}
-    </div>
     
 
 

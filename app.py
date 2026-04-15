@@ -151,6 +151,18 @@ def seller_dashboard():
 def helpdesk_dashboard():
     return render_template('helpdesk.html')
 
+
+@app.route('/create_auction', methods=['GET', 'POST'])
+def create_auction():
+    if request.method == 'POST':
+        # to be implemented: form handling to create a new auction
+        pass
+    return render_template('create-auction.html')
+
+@app.route('/user_account')
+def user_account():
+    return render_template('user-account.html')
+
 if __name__ == '__main__':
     app.run(debug=True)         # Set debug=True for development to allow auto-reloading 
 

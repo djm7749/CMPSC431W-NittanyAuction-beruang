@@ -163,21 +163,27 @@ def bidder_dashboard():
         LIMIT ? OFFSET ?
     """, (per_page, offset))
 
-    rows = cur.fetchall()
+    auction_rows = cur.fetchall()
+
+    cur.execute("""SELECT *
+                   FROM Categories""")
+    category_rows = cur.fetchall()
     conn.close()
 
     items = []
-    for row in rows:
+    for row in auction_rows:
         items.append({
             "name": row["name"],
             "price": row["price"] if row["price"] is not None else 0,
             "image": "default-auction.jpg"
         })
 
+    categories = load_categories(category_rows)
+
     has_prev = page > 1
     has_next = offset + per_page < total_items
 
-    return render_template('bidder.html', items=items, page=page, has_prev=has_prev, has_next=has_next)
+    return render_template('bidder.html', items=items, page=page, has_prev=has_prev, has_next=has_next, categories=categories)
 
 @app.route('/seller_dashboard')
 def seller_dashboard():
@@ -227,6 +233,35 @@ def create_auction():
 @app.route('/user_account')
 def user_account():
     return render_template('user-account.html')
+
+# Helper Function : Make a hierachical tree from category database
+def load_categories(rows):
+    nodes = {}
+    tree = []
+
+    for row in rows:
+        name = row['category_name'].strip()
+        parent = row['parent_category'].strip() if row['parent_category'] else None
+
+        node = {
+            'name': name,
+            'parent': parent,
+            'children': [],
+        }
+
+        nodes[name] = node
+
+    for node in nodes.values():
+        parent = node['parent']
+
+        if parent == '' or parent is None:
+            tree.append(node)
+        elif parent in nodes:
+            nodes[parent]['children'].append(node)
+        else:
+            tree.append(node)
+
+    return tree
 
 if __name__ == '__main__':
     app.run(debug=True)         # Set debug=True for development to allow auto-reloading 

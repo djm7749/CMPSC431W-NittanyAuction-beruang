@@ -1,0 +1,12 @@
+<li>
+    {{ category.name }}
+
+    {% if category.children %}
+        <ul>
+            {% for child in category.children %}
+                {% set category = child %}
+                {% include 'category_recursive.html' %}
+            {% endfor %}
+        </ul>
+    {% endif %}
+</li>

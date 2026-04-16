@@ -72,9 +72,18 @@
         </div>
     {% endfor %}
     </div>
-    
 
+    <div class="d-flex justify-content-center align-items-center mt-4">
+        {% if has_prev %}
+            <a href="{{ url_for('bidder_dashboard', page=page-1) }}" class="btn btn-outline-secondary mr-2">Previous</a>
+        {% endif %}
 
-        
+        <span class="mx-3 font-weight-bold">Page {{ page }}</span>
+
+        {% if has_next %}
+            <a href="{{ url_for('bidder_dashboard', page=page+1) }}" class="btn btn-outline-secondary ml-2">Next</a>
+        {% endif %}
+    </div>
+    </div>
 </body>
 </html> 

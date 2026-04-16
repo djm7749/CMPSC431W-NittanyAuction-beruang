@@ -1,6 +1,9 @@
 from flask import Flask, render_template, request, session, redirect, url_for
 import sqlite3
 import hashlib
+
+from pandas.core.config_init import parquet_engine_doc
+
 from init_db import init_db
 
 app = Flask(__name__)
@@ -130,17 +133,20 @@ def signup():
 
 @app.route('/bidder_dashboard')
 def bidder_dashboard():
-        # items = [
-        #     {"name": "Laptop", "price": 500, "image": "default-auction.jpg"},
-        #     {"name": "Phone", "price": 300, "image": None},
-        #     {"name": "Headphones", "price": 150, "image": None},
-        #     {"name": "Camera", "price": 800, "image": None},
-        #     {"name": "Tablet", "price": 400, "image": None},
-        #     {"name": "Monitor", "price": 600, "image": None}
-        # ]
+
+    page = request.args.get('page', 1, type=int)
+    per_page = 12
+    offset = (page - 1) * per_page
 
     conn = db_connect()
     cur = conn.cursor()
+
+    cur.execute("""
+                SELECT COUNT(*) AS total
+                FROM Auction_Listings
+                WHERE status = 1
+                """)
+    total_items = cur.fetchone()["total"]
 
     cur.execute("""
         SELECT 
@@ -154,8 +160,8 @@ def bidder_dashboard():
         FROM Auction_Listings a
         WHERE a.status = 1
         ORDER BY a.Listing_ID
-        LIMIT 8
-    """)
+        LIMIT ? OFFSET ?
+    """, (per_page, offset))
 
     rows = cur.fetchall()
     conn.close()
@@ -164,20 +170,46 @@ def bidder_dashboard():
     for row in rows:
         items.append({
             "name": row["name"],
-            "price": row["price"],
+            "price": row["price"] if row["price"] is not None else 0,
             "image": "default-auction.jpg"
         })
 
-    return render_template('bidder.html', items=items)
+    has_prev = page > 1
+    has_next = offset + per_page < total_items
+
+    return render_template('bidder.html', items=items, page=page, has_prev=has_prev, has_next=has_next)
 
 @app.route('/seller_dashboard')
 def seller_dashboard():
-    items = [
-        {"name": "Laptop", "price": 500, "image": "default-auction.jpg"},
-        {"name": "Phone", "price": 300, "image": None},
-        {"name": "Headphones", "price": 150, "image": None},
-        {"name": "Monitor", "price": 600, "image": None}
-    ]
+    # items = [
+    #     {"name": "Laptop", "price": 500, "image": "default-auction.jpg"},
+    #     {"name": "Phone", "price": 300, "image": None},
+    #     {"name": "Headphones", "price": 150, "image": None},
+    #     {"name": "Monitor", "price": 600, "image": None}
+    # ]
+
+    seller_email = session['user_email']
+
+    conn = db_connect()
+    cur = conn.cursor()
+
+    cur.execute("""
+                SELECT Product_Name, Reserve_Price
+                FROM Auction_Listings
+                WHERE Seller_Email = ?
+                """, (seller_email,))
+
+    rows = cur.fetchall()
+
+    items = []
+
+    for row in rows:
+        items.append({
+            "name": row[0],  # Product_Name
+            "price": row[1],  # Reserve_Price (or current bid if you have it)
+            "image": "default-auction.jpg"  # keep frontend unchanged
+        })
+
     return render_template('seller.html', items=items)
 
 @app.route('/helpdesk_dashboard')

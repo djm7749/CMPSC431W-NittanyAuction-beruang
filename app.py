@@ -274,7 +274,7 @@ def browse():
 
     return render_template('browse.html', items=items, page=page, has_prev=has_prev, has_next=has_next)
 
-# Helper Function : Make a hierachical tree from category database
+# Helper Function : Make a hierarchical tree from category database
 def load_categories(rows):
     nodes = {}
     tree = []

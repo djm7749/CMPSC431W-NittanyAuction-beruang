@@ -142,22 +142,22 @@ def bidder_dashboard():
     conn = db_connect()
     cur = conn.cursor()
 
-    cursor.execute("""
+    cur.execute("""
         SELECT 
             a.Listing_ID,
             a.Product_Name AS name,
             (   
                 SELECT MAX(Bid_Price)
-                FROM Bidders b
+                FROM Bids b
                 WHERE b.Listing_ID = a.Listing_ID
-            ) AS price,
+            ) AS price
         FROM Auction_Listings a
         WHERE a.status = 1
         ORDER BY a.Listing_ID
-        LIMIT 10
+        LIMIT 8
     """)
 
-    rows = cursor.fetchall()
+    rows = cur.fetchall()
     conn.close()
 
     items = []

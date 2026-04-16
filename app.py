@@ -134,19 +134,8 @@ def signup():
 @app.route('/bidder_dashboard')
 def bidder_dashboard():
 
-    page = request.args.get('page', 1, type=int)
-    per_page = 12
-    offset = (page - 1) * per_page
-
     conn = db_connect()
     cur = conn.cursor()
-
-    cur.execute("""
-                SELECT COUNT(*) AS total
-                FROM Auction_Listings
-                WHERE status = 1
-                """)
-    total_items = cur.fetchone()["total"]
 
     cur.execute("""
         SELECT 
@@ -160,8 +149,8 @@ def bidder_dashboard():
         FROM Auction_Listings a
         WHERE a.status = 1
         ORDER BY a.Listing_ID
-        LIMIT ? OFFSET ?
-    """, (per_page, offset))
+        LIMIT 8
+    """)
 
     auction_rows = cur.fetchall()
 
@@ -180,10 +169,7 @@ def bidder_dashboard():
 
     categories = load_categories(category_rows)
 
-    has_prev = page > 1
-    has_next = offset + per_page < total_items
-
-    return render_template('bidder.html', items=items, page=page, has_prev=has_prev, has_next=has_next, categories=categories)
+    return render_template('bidder.html', items=items, categories=categories)
 
 @app.route('/seller_dashboard')
 def seller_dashboard():
@@ -233,6 +219,60 @@ def create_auction():
 @app.route('/user_account')
 def user_account():
     return render_template('user-account.html')
+
+@app.route('/browse')
+def browse():
+
+    page = request.args.get('page', 1, type=int)
+    per_page = 12
+    offset = (page - 1) * per_page
+
+    conn = db_connect()
+    cur = conn.cursor()
+
+    cur.execute("""
+                SELECT COUNT(*) AS total
+                FROM Auction_Listings
+                WHERE status = 1
+                """)
+    total_items = cur.fetchone()["total"]
+
+    cur.execute("""
+        SELECT 
+            a.Listing_ID,
+            a.Product_Name AS name,
+            (   
+                SELECT MAX(Bid_Price)
+                FROM Bids b
+                WHERE b.Listing_ID = a.Listing_ID
+            ) AS price
+        FROM Auction_Listings a
+        WHERE a.status = 1
+        ORDER BY a.Listing_ID
+        LIMIT ? OFFSET ?
+    """, (per_page, offset))
+
+    auction_rows = cur.fetchall()
+
+    # cur.execute("""SELECT *
+    #                FROM Categories""")
+    # category_rows = cur.fetchall()
+    conn.close()
+
+    items = []
+    for row in auction_rows:
+        items.append({
+            "name": row["name"],
+            "price": row["price"] if row["price"] is not None else 0,
+            "image": "default-auction.jpg"
+        })
+
+    # categories = load_categories(category_rows)
+
+    has_prev = page > 1
+    has_next = offset + per_page < total_items
+
+    return render_template('browse.html', items=items, page=page, has_prev=has_prev, has_next=has_next)
 
 # Helper Function : Make a hierachical tree from category database
 def load_categories(rows):

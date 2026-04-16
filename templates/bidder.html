@@ -15,8 +15,8 @@
             <a class="navbar-brand text-dark" style="font-weight: bold;" href="/">NITTANY AUCTION</a>
 
             <div class="d-flex">
-                <a href="" class="nav-link text-dark">Browse</a>
-                <a href="" class="nav-link text-dark">My Bids</a>
+                <a href="/browse" class="nav-link text-dark">Browse</a>
+                <a href="/bidder_dashboard" class="nav-link text-dark">My Bids</a>
                 <a href="" class="nav-link text-dark">Category</a>
             </div> 
 
@@ -56,45 +56,33 @@
         <p>Here you can see all your current bids.</p>
     </div>
 
-    <div class="container mt-4 bg-light p-4 rounded">
-        <h2>Browse Auctions</h2>
-        <p>Here you can browse ongoing auctions and your bids.</p>
-
-    <!-- LIST OF AUCTIONS -->
-    <div class="row justify-content-start mt-3">
-        {% for item in items %}
-        <div class="col-lg-3 mb-3 d-flex justify-content-center">
-
-            <div class="card auction-card">
-                <div class="card mb-4">
-            
-                    <img 
-                        src="{{ url_for('static', filename='images/' + (item.image if item.image else 'default-auction.jpg')) }}" 
-                        class="card-img-top">
-
-                    <div class="card-body">
-                        <h5 class="card-title">{{ item.name }}</h5>
-                        <p class="card-text">Current Bid: ${{ item.price }}</p>
-                        <a href="#" class="btn btn-primary">Place Bid</a>
-                    </div>
-
-                </div>
-            </div>
-        </div>
-    {% endfor %}
-    </div>
-
-    <div class="d-flex justify-content-center align-items-center mt-4">
-        {% if has_prev %}
-            <a href="{{ url_for('bidder_dashboard', page=page-1) }}" class="btn btn-outline-secondary mr-2">Previous</a>
-        {% endif %}
-
-        <span class="mx-3 font-weight-bold">Page {{ page }}</span>
-
-        {% if has_next %}
-            <a href="{{ url_for('bidder_dashboard', page=page+1) }}" class="btn btn-outline-secondary ml-2">Next</a>
-        {% endif %}
-    </div>
-    </div>
+{#    <div class="container mt-4 bg-light p-4 rounded">#}
+{#        <h2>Browse Auctions</h2>#}
+{#        <p>Here you can browse ongoing auctions and your bids.</p>#}
+{##}
+{#    <!-- LIST OF AUCTIONS -->#}
+{#    <div class="row justify-content-start mt-3">#}
+{#        {% for item in items %}#}
+{#        <div class="col-lg-3 mb-3 d-flex justify-content-center">#}
+{##}
+{#            <div class="card auction-card">#}
+{#                <div class="card mb-4">#}
+{#            #}
+{#                    <img #}
+{#                        src="{{ url_for('static', filename='images/' + (item.image if item.image else 'default-auction.jpg')) }}" #}
+{#                        class="card-img-top">#}
+{##}
+{#                    <div class="card-body">#}
+{#                        <h5 class="card-title">{{ item.name }}</h5>#}
+{#                        <p class="card-text">Current Bid: ${{ item.price }}</p>#}
+{#                        <a href="#" class="btn btn-primary">Place Bid</a>#}
+{#                    </div>#}
+{##}
+{#                </div>#}
+{#            </div>#}
+{#        </div>#}
+{#    {% endfor %}#}
+{#    </div>#}
+{#    </div>#}
 </body>
 </html> 

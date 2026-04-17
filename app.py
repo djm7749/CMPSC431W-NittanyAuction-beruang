@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, session, redirect, url_for
+from flask import Flask, render_template, request, session, redirect, url_for, flash
 import sqlite3
 import hashlib
 
@@ -202,6 +202,7 @@ def seller_dashboard():
             "image": "default-auction.jpg"  # keep frontend unchanged
         })
 
+    conn.close()
     return render_template('seller.html', items=items)
 
 @app.route('/helpdesk_dashboard')
@@ -218,7 +219,24 @@ def create_auction():
 
 @app.route('/user_account')
 def user_account():
-    return render_template('user-account.html')
+
+    # Get User Session Email
+    user_email = session['user_email']
+    if not user_email:
+        return redirect(url_for('login'))
+
+    # Get detail y fetching data in DB
+    conn = db_connect()
+    cur = conn.cursor()
+
+    cur.execute("""
+                SELECT email, first_name, last_name
+                FROM Bidders
+                WHERE email = ?
+                """, (user_email,))
+    user_row = cur.fetchone()
+    conn.close()
+    return render_template('user-account.html', user_data = user_row)
 
 @app.route('/browse')
 def browse():
@@ -323,6 +341,60 @@ def browse():
 
     return render_template('browse.html', items=items, categories=categories, page=page, has_prev=has_prev, has_next=has_next)
 
+
+@app.route('/update_profile', methods=['POST'])
+def update_profile():
+
+    # Get User Session Email
+    user_email = session['user_email']
+    if not user_email:
+        return redirect(url_for('login'))
+
+    # Get User Input form
+    first_name = request.form.get('firstName')
+    last_name = request.form.get('lastName')
+    new_password = request.form.get('password')
+    confirm_password = request.form.get('confirm_password')
+    password_updated = False
+    try:
+        conn = db_connect()
+        cur = conn.cursor()
+
+        # Update First Name and Last Name
+        cur.execute("""
+                    UPDATE Bidders
+                    SET first_name = ?,
+                        last_name  = ?
+                    WHERE email = ?
+                    """, [first_name, last_name, user_email])
+        print("Updated Profile Name")
+        # Update Password
+        if new_password and new_password.strip() != "":
+            if new_password != confirm_password:
+                flash("Passwords do not match. Please try again.")
+            else:
+                # Hash New Password before Update in DB
+                hashed_password = hashlib.sha256(new_password.encode()).hexdigest()
+                cur.execute("""
+                    UPDATE Users
+                    SET password_hash = ?
+                    WHERE email = ?
+                """, [hashed_password, user_email])
+                print("Updated Profile Password")
+                password_updated = True
+                flash('Password has been updated!', 'success')
+
+        conn.commit()
+    except Exception as e:
+        print("Error When Updating Profile:",e )
+        flash("An error occurred while updating your profile.")
+    finally:
+        conn.close()
+    if password_updated:
+        return redirect('/login')
+    return redirect('/user_account')
+
+
 # Helper Function : Make a hierarchical tree from category database
 def load_categories(rows):
     nodes = {}
@@ -351,6 +423,7 @@ def load_categories(rows):
             tree.append(node)
 
     return tree
+
 
 if __name__ == '__main__':
     app.run(debug=True)         # Set debug=True for development to allow auto-reloading 

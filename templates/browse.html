@@ -70,6 +70,16 @@
             <p>Here you can see all your current bids.</p> -->
             <!-- LIST OF AUCTIONS -->
         <div class="row justify-content-start mt-3">
+            <!--No results-->
+            {% if items|length == 0 %}
+                <div class="text-center w-100 mt-4">
+                    <h5>No products found.</h5>
+                    {% if request.args.get('q') %}
+                        <p>No results matched "{{ request.args.get('q') }}".</p>
+                    {% endif %}
+                </div>
+            {% endif %}
+
             {% for item in items %}
             <div class="col-xl-2 col-lg-3 col-md-6 col-sm-12 mb-3 d-flex justify-content-center"> {# adjust here for card per page#}
 
@@ -82,6 +92,9 @@
 
                         <div class="card-body">
                             <h5 class="card-title">{{ item.name }}</h5>
+                            <p class="card-text text-muted mb-1" style="font-size: 14px;">{{ item.description }}</p>
+                            <p class="card-text mb-1"><strong>Category:</strong> {{ item.category }}</p>
+                            <p class="card-text mb-1"><strong>Seller:</strong> {{ item.seller }}</p>
                             <p class="card-text">Current Bid: ${{ item.price }}</p>
                             <a href="#" class="btn btn-primary">Place Bid</a>
                         </div>
@@ -94,13 +107,13 @@
 
         <div class="d-flex justify-content-center align-items-center mt-4">
             {% if has_prev %}
-                <a href="{{ url_for('browse', page=page-1) }}" class="btn btn-outline-secondary mr-2">Previous</a>
+                <a href="{{ url_for('browse', page=page-1, q=request.args.get('q','')) }}" class="btn btn-outline-secondary mr-2">Previous</a>
             {% endif %}
 
             <span class="mx-3 font-weight-bold">Page {{ page }}</span>
 
             {% if has_next %}
-                <a href="{{ url_for('browse', page=page+1) }}" class="btn btn-outline-secondary ml-2">Next</a>
+                <a href="{{ url_for('browse', page=page+1, q=request.args.get('q','')) }}" class="btn btn-outline-secondary ml-2">Next</a>
             {% endif %}
         </div>
         </div>

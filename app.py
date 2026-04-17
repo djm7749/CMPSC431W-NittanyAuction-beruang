@@ -239,19 +239,30 @@ def browse():
         keyword = f"%{q}%"
         base_query = """
         FROM Auction_Listings a
+        LEFT JOIN Local_Vendors lv
+            ON a.Seller_Email = lv.Email
+        LEFT JOIN Bidders bd
+            ON a.Seller_Email = bd.Email
         WHERE a.status = 1
             AND (
                 a.Product_Name LIKE ?
                 OR a.Product_Description LIKE ?
                 OR a.Category LIKE ?
-                OR a.Seller_Email LIKE ?
+                OR lv.Business_Name LIKE ?
+                OR bd.first_name LIKE ?
+                OR bd.last_name LIKE ?
+                OR (bd.first_name || ' ' || bd.last_name) LIKE ?
                 )
         """
-        params.extend([keyword, keyword, keyword, keyword])
+        params.extend([keyword, keyword, keyword, keyword, keyword, keyword, keyword])
 
     else:
         base_query = """
         FROM Auction_Listings a
+        LEFT JOIN Local_Vendors lv
+            ON a.Seller_Email = lv.Email
+        LEFT JOIN Bidders bd
+            ON a.Seller_Email = bd.Email
         WHERE a.status = 1
         """
 
@@ -267,8 +278,16 @@ def browse():
             a.Listing_ID,
             a.Product_Name AS name,
             a.Product_Description AS description,
-            a.Category,
+            a.Category as category,
             a.Seller_Email AS email,
+            CASE
+                WHEN lv.Business_Name IS NOT NULL THEN lv.Business_Name
+                WHEN bd.first_name IS NOT NULL AND bd.last_name IS NOT NULL
+                    THEN bd.first_name || ' ' || bd.last_name
+                WHEN bd.first_name IS NOT NULL
+                    THEN bd.first_name
+                ELSE a.Seller_Email
+            END AS seller_name,
             (   
                 SELECT MAX(Bid_Price)
                 FROM Bids b
@@ -290,6 +309,9 @@ def browse():
     for row in auction_rows:
         items.append({
             "name": row["name"],
+            "description": row["description"],
+            "category": row["category"],
+            "seller": row["seller_name"],
             "price": row["price"] if row["price"] is not None else 0,
             "image": "default-auction.jpg"
         })

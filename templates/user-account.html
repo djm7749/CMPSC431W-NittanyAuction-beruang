@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Bidder Dashboard</title>
+    <title>Update Profile</title>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css"
           integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">    
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
@@ -13,18 +13,18 @@
     <!-- Daniel : Navbar need to change according to user role, right? -->
      
     <!-- NAVBAR -->
-    <nav class="navbar navbar-expand-lg navbar-light bg-light"
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
         <div class="container-fluid">
 
             <a class="navbar-brand text-dark" style="font-weight: bold;" href="/">NITTANY AUCTION</a>
 
             <div class="d-flex">
-                <a href="" class="nav-link text-dark">Browse</a>
-                <a href="" class="nav-link text-dark">My Bids</a>
-                <a href="" class="nav-link text-dark">Category</a>
+                <a href="/browse" class="nav-link text-dark">Browse</a>
+                <a href="/bidder_dashboard" class="nav-link text-dark">My Bids</a>
+{#                <a href="" class="nav-link text-dark">Category</a>#}
             </div>
 
-            <div class="mx-auto">   
+            <div class="mx-auto">
                 <form class="form-inline my-2 my-lg-0">
                     <input class="form-control mr-sm-2" type="search" placeholder="Search" aria-label="Search">
                     <button class="btn btn-outline-success my-2 my-sm-0" type="submit">Search</button>
@@ -32,7 +32,7 @@
             </div>
 
             <div>
-                <a href="" class="btn btn-primary mr-2">My Account</a>
+                <a href="/user_account" class="btn btn-primary mr-2">My Account</a>
                 <a href="/" class="btn btn-outline-secondary">Logout</a>
             </div>
         </div>
@@ -40,17 +40,52 @@
 
     <!-- MAIN CONTENT -->
 
-    <!-- DELETE THIS PART LATER -->
-    <!-- <div class="container mt-4">
-        <h1>User Account</h1>
-        <p>Welcome to your user account!</p>
-    </div> -->
-    <!-- DELETE THIS PART LATER -->
-
     <div class="container mt-4 bg-light p-4 rounded">
         <h2>Account Information</h2>
         <p>Here you can view and edit your account details.</p>
+
+        <form action="/update_profile" method="POST">
+            <div class="form-group">
+                <label for="email">User ID (Email Address)</label>
+                <input type="email" class="form-control" id="email" name="email"
+                       value="{{ user_data['email']}}" readonly>
+                <small class="form-text text-danger">
+                    Email changes require a formal request to the HelpDesk.
+                </small>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group col-md-6">
+                    <label for="firstName">First Name</label>
+                    <input type="text" class="form-control" id="firstName" name="firstName"
+                           value="{{ user_data['first_name'] }}" required>
+                </div>
+                <div class="form-group col-md-6">
+                    <label for="lastName">Last Name</label>
+                    <input type="text" class="form-control" id="lastName" name="lastName"
+                           value="{{ user_data['last_name'] }}" required>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group col-md-6">
+                    <label for="password">New Password</label>
+                    <input type="password" class="form-control" id="password" name="password"
+                           placeholder=""> <small class="form-text text-muted">Leave blank to keep current password.</small>
+                </div>
+                <div class="form-group col-md-6">
+                    <label for="confirm_password">Confirm New Password</label>
+                    <input type="password" class="form-control" id="confirm_password" name="confirm_password"
+                           placeholder="">
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-success">Save Changes</button>
+            <a href="/bidder_dashboard" class="btn btn-secondary">Cancel</a>
+        </form>
     </div>
+
+
 
 
 

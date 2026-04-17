@@ -60,8 +60,8 @@
             <!-- <h2 class="mb-4">Search for items</h2> -->
 
             <form class="d-flex justify-content-center">
-                <input class="form-control mr-2 search-input w-50" type="search" placeholder="Search items..." style="width: 400px;">
-                <button class="btn btn-primary search-button">Search</button>
+                <input class="form-control mr-2 search-input w-50" type="search" name="q" placeholder="Search items..." value="{{ request.args.get('q','') }}" style="width: 400px;">
+                <button class="btn btn-primary search-button" type="submit">Search</button>
             </form>
         </div>
 

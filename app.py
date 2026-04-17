@@ -227,30 +227,57 @@ def browse():
     per_page = 24
     offset = (page - 1) * per_page
 
+    q = request.args.get('q','').strip()
+
     conn = db_connect()
     cur = conn.cursor()
 
-    cur.execute("""
+    params = []
+
+    # Add Keyword Filter
+    if q:
+        keyword = f"%{q}%"
+        base_query = """
+        FROM Auction_Listings a
+        WHERE a.status = 1
+            AND (
+                a.Product_Name LIKE ?
+                OR a.Product_Description LIKE ?
+                OR a.Category LIKE ?
+                OR a.Seller_Email LIKE ?
+                )
+        """
+        params.extend([keyword, keyword, keyword, keyword])
+
+    else:
+        base_query = """
+        FROM Auction_Listings a
+        WHERE a.status = 1
+        """
+
+    # Count
+    cur.execute(f"""
                 SELECT COUNT(*) AS total
-                FROM Auction_Listings
-                WHERE status = 1
-                """)
+                {base_query}
+                """, params)
     total_items = cur.fetchone()["total"]
 
-    cur.execute("""
+    cur.execute(f"""
         SELECT 
             a.Listing_ID,
             a.Product_Name AS name,
+            a.Product_Description AS description,
+            a.Category,
+            a.Seller_Email AS email,
             (   
                 SELECT MAX(Bid_Price)
                 FROM Bids b
                 WHERE b.Listing_ID = a.Listing_ID
             ) AS price
-        FROM Auction_Listings a
-        WHERE a.status = 1
+        {base_query}
         ORDER BY a.Listing_ID
         LIMIT ? OFFSET ?
-    """, (per_page, offset))
+    """, params + [per_page, offset])
 
     auction_rows = cur.fetchall()
 

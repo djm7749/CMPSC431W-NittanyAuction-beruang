@@ -154,9 +154,9 @@ def bidder_dashboard():
 
     auction_rows = cur.fetchall()
 
-    cur.execute("""SELECT *
-                   FROM Categories""")
-    category_rows = cur.fetchall()
+    # cur.execute("""SELECT *
+    #                FROM Categories""")
+    # category_rows = cur.fetchall()
     conn.close()
 
     items = []
@@ -167,9 +167,9 @@ def bidder_dashboard():
             "image": "default-auction.jpg"
         })
 
-    categories = load_categories(category_rows)
+    # categories = load_categories(category_rows)
 
-    return render_template('bidder.html', items=items, categories=categories)
+    return render_template('bidder.html', items=items)
 
 @app.route('/seller_dashboard')
 def seller_dashboard():
@@ -224,7 +224,7 @@ def user_account():
 def browse():
 
     page = request.args.get('page', 1, type=int)
-    per_page = 12
+    per_page = 24
     offset = (page - 1) * per_page
 
     conn = db_connect()
@@ -254,9 +254,9 @@ def browse():
 
     auction_rows = cur.fetchall()
 
-    # cur.execute("""SELECT *
-    #                FROM Categories""")
-    # category_rows = cur.fetchall()
+    cur.execute("""SELECT *
+                   FROM Categories""")
+    category_rows = cur.fetchall()
     conn.close()
 
     items = []
@@ -267,12 +267,12 @@ def browse():
             "image": "default-auction.jpg"
         })
 
-    # categories = load_categories(category_rows)
+    categories = load_categories(category_rows)
 
     has_prev = page > 1
     has_next = offset + per_page < total_items
 
-    return render_template('browse.html', items=items, page=page, has_prev=has_prev, has_next=has_next)
+    return render_template('browse.html', items=items, categories=categories, page=page, has_prev=has_prev, has_next=has_next)
 
 # Helper Function : Make a hierarchical tree from category database
 def load_categories(rows):

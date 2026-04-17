@@ -1,8 +1,8 @@
 
 
+
 /* --------------- Auction Card ---------------*/
 
-/* CARD CONTAINER */
 .auction-card {
   width: 18rem;
   border: none;
@@ -11,38 +11,94 @@
   transition: all 0.3s ease;
 }
 
-/* HOVER EFFECT */
 .auction-card:hover {
   transform: scale(1.01)
 }
 
-/* IMAGE */
 .auction-card img {
   height: 180px;
   object-fit: contain;
 }
 
-/* CARD BODY */
 .auction-card .card-body {
   padding: 20px;
 }
 
-/* TITLE */
 .auction-card .card-title {
   font-weight: 600;
   font-size: 18px;
 }
 
-/* PRICE */
 .auction-card .card-text {
   font-size: 1rem;
   font-weight: bold;
 }
 
-/* BUTTON */
 .auction-card .btn {
   width: 100%;
   border-radius: 10px;
 }
+
+/* --------------- Sidebar ---------------*/
+
+.browse-dashboard {
+  padding-top: 56px;
+  margin-left: 250px;
+}
+
+.sidebar-title{
+  padding-left:1vw;
+  padding-bottom: 5px;
+}
+
+.sidebar {
+  width: 250px;
+  height: 100vh;
+  position: fixed;
+  top: 56px;
+  left: 0;
+  background-color: #f8f9fa;
+  padding: 30px 15px;
+  overflow-y: auto;
+  border-right: 1px solid #ddd;
+}
+
+.sidebar ul {
+  list-style: none;
+  padding-left: 10px;
+  margin: 0;
+}
+
+.sidebar li {
+  padding: 5px 0;
+  font-size: 14px;
+}
+
+.sidebar li {
+  cursor: pointer;
+}
+
+.sidebar summary{
+  list-style: none;
+  cursor: pointer;
+  padding: 1vh 1vw;
+  border-radius: 6px;
+}
+
+.sidebar summary:hover {
+  background-color: #e9ecef;
+}
+
+.sidebar ul ul {
+  margin-left: 15px;
+  padding-left: 10px;
+  border-left: 1px solid #ccc;
+}
+
+.sidebar ul ul ul li:hover {
+  background-color: #e9ecef;
+}
+
+
 
 

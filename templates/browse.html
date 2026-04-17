@@ -9,7 +9,7 @@
 </head>
 <body>
     <!-- NAVBAR -->
-    <nav class="navbar navbar-expand-lg navbar-light bg-light"
+    <nav class="navbar navbar-expand-lg navbar-light bg-light fixed-top">
         <div class="container-fluid">
 
             <a class="navbar-brand text-dark" style="font-weight: bold;" href="/">NITTANY AUCTION</a>
@@ -17,17 +17,17 @@
             <div class="d-flex">
                 <a href="/browse" class="nav-link text-dark">Browse</a>
                 <a href="/bidder_dashboard" class="nav-link text-dark">My Bids</a>
-                <a href="" class="nav-link text-dark">Category</a>
-            </div> 
+{#                <a href="" class="nav-link text-dark">Category</a>#}
+            </div>
 
-            <!-- <div class="mx-auto">   
+            <div class="mx-auto">
                 <form class="form-inline my-2 my-lg-0">
                     <input class="form-control mr-sm-2" type="search" placeholder="Search" aria-label="Search">
                     <button class="btn btn-outline-success my-2 my-sm-0" type="submit">Search</button>
                 </form>
-            </div> -->
+            </div>
 
-            <div class="ml-auto">
+            <div>
                 <a href="/user_account" class="btn btn-primary mr-2">My Account</a>
                 <a href="/" class="btn btn-outline-secondary">Logout</a>
             </div>
@@ -36,60 +36,74 @@
 
     <!-- MAIN CONTENT -->
 
-    <!-- title -->
-    <div class="container mt-4 text-center">
-        <h1>Discover new items</h1>
-        <p>Lets see what the community has to offer</p>
-    </div>
+    <div class="browse-dashboard">
+        <!-- SIDEBAR -->
+        <div class="sidebar">
+            <h5 class="sidebar-title">
+                Category
+            </h5>
+            <ul>
+                {% for category in categories %}
+                    {% include 'category_recursive.html' %}
+                {% endfor %}
+            </ul>
+        </div>
 
-    <!-- search bar -->
-    <div class="container text-center search-section" style="margin-top: 5vh;">
-        <!-- <h2 class="mb-4">Search for items</h2> -->
+        <!-- title -->
+        <div class="container mt-4 text-center">
+            <h1>Discover new items</h1>
+            <p>Lets see what the community has to offer</p>
+        </div>
 
-        <form class="d-flex justify-content-center">
-            <input class="form-control mr-2 search-input w-50" type="search" placeholder="Search items..." style="width: 400px;">
-            <button class="btn btn-primary search-button">Search</button>
-        </form>
-    </div>
+        <!-- search bar -->
+        <div class="container text-center search-section" style="margin-top: 5vh;">
+            <!-- <h2 class="mb-4">Search for items</h2> -->
 
-    <div class="container mt-4 bg-light p-4 rounded">
-        <!-- <h2>Current Bids</h2>
-        <p>Here you can see all your current bids.</p> -->
-        <!-- LIST OF AUCTIONS -->
-    <div class="row justify-content-start mt-3">
-        {% for item in items %}
-        <div class="col-lg-3 mb-3 d-flex justify-content-center">
+            <form class="d-flex justify-content-center">
+                <input class="form-control mr-2 search-input w-50" type="search" placeholder="Search items..." style="width: 400px;">
+                <button class="btn btn-primary search-button">Search</button>
+            </form>
+        </div>
 
-            <div class="card auction-card">
-                <div class="card mb-4">
+        <div class="container-fluid mt-4 bg-light p-4 px-4 rounded" style="height: 100vh">
+            <!-- <h2>Current Bids</h2>
+            <p>Here you can see all your current bids.</p> -->
+            <!-- LIST OF AUCTIONS -->
+        <div class="row justify-content-start mt-3">
+            {% for item in items %}
+            <div class="col-xl-2 col-lg-3 col-md-6 col-sm-12 mb-3 d-flex justify-content-center"> {# adjust here for card per page#}
 
-                    <img
-                        src="{{ url_for('static', filename='images/' + (item.image if item.image else 'default-auction.jpg')) }}"
-                        class="card-img-top">
+                <div class="card auction-card">
+                    <div class="card mb-4">
 
-                    <div class="card-body">
-                        <h5 class="card-title">{{ item.name }}</h5>
-                        <p class="card-text">Current Bid: ${{ item.price }}</p>
-                        <a href="#" class="btn btn-primary">Place Bid</a>
+                        <img
+                            src="{{ url_for('static', filename='images/' + (item.image if item.image else 'default-auction.jpg')) }}"
+                            class="card-img-top">
+
+                        <div class="card-body">
+                            <h5 class="card-title">{{ item.name }}</h5>
+                            <p class="card-text">Current Bid: ${{ item.price }}</p>
+                            <a href="#" class="btn btn-primary">Place Bid</a>
+                        </div>
+
                     </div>
-
                 </div>
             </div>
+        {% endfor %}
         </div>
-    {% endfor %}
-    </div>
 
-    <div class="d-flex justify-content-center align-items-center mt-4">
-        {% if has_prev %}
-            <a href="{{ url_for('bidder_dashboard', page=page-1) }}" class="btn btn-outline-secondary mr-2">Previous</a>
-        {% endif %}
+        <div class="d-flex justify-content-center align-items-center mt-4">
+            {% if has_prev %}
+                <a href="{{ url_for('browse', page=page-1) }}" class="btn btn-outline-secondary mr-2">Previous</a>
+            {% endif %}
 
-        <span class="mx-3 font-weight-bold">Page {{ page }}</span>
+            <span class="mx-3 font-weight-bold">Page {{ page }}</span>
 
-        {% if has_next %}
-            <a href="{{ url_for('bidder_dashboard', page=page+1) }}" class="btn btn-outline-secondary ml-2">Next</a>
-        {% endif %}
-    </div>
+            {% if has_next %}
+                <a href="{{ url_for('browse', page=page+1) }}" class="btn btn-outline-secondary ml-2">Next</a>
+            {% endif %}
+        </div>
+        </div>
     </div>
 
 </body>

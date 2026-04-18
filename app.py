@@ -134,6 +134,8 @@ def signup():
 @app.route('/bidder_dashboard')
 def bidder_dashboard():
 
+    # user_role = session['role']
+
     conn = db_connect()
     cur = conn.cursor()
 
@@ -173,6 +175,7 @@ def bidder_dashboard():
 
 @app.route('/seller_dashboard')
 def seller_dashboard():
+    
     # items = [
     #     {"name": "Laptop", "price": 500, "image": "default-auction.jpg"},
     #     {"name": "Phone", "price": 300, "image": None},
@@ -181,6 +184,7 @@ def seller_dashboard():
     # ]
 
     seller_email = session['user_email']
+    # seller_role = session['role']
 
     conn = db_connect()
     cur = conn.cursor()
@@ -241,6 +245,8 @@ def user_account():
 @app.route('/browse')
 def browse():
 
+    user_role = session.get('role')
+    
     page = request.args.get('page', 1, type=int)
     per_page = 24
     offset = (page - 1) * per_page
@@ -339,7 +345,7 @@ def browse():
     has_prev = page > 1
     has_next = offset + per_page < total_items
 
-    return render_template('browse.html', items=items, categories=categories, page=page, has_prev=has_prev, has_next=has_next)
+    return render_template('browse.html', items=items, categories=categories, page=page, has_prev=has_prev, has_next=has_next, role=user_role)
 
 
 @app.route('/update_profile', methods=['POST'])

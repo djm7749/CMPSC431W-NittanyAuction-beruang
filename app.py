@@ -152,12 +152,29 @@ def helpdesk_dashboard():
     return render_template('helpdesk.html')
 
 
-@app.route('/create_auction', methods=['GET', 'POST'])
+@app.route('/seller_dashboard/create_auction', methods=['GET', 'POST'])
 def create_auction():
+    active_role = session.get('active_role')
+    seller_email = session.get('user_email')
+
+    conn = db_connect()
+    cur = conn.cursor()
+
+    # Load category hierarchy
+    category_rows = get_categories()
+    category_tree = load_categories(category_rows)
+    category_options = flatten_categories_for_select(category_tree)
+
     if request.method == 'POST':
-        # to be implemented: form handling to create a new auction
+        name = request.form.get('name', '').strip()
+        description = request.form.get('description', '').strip()
+        category = request.form.get('category', '').strip()
+        reserve_price = float(request.form.get('reserve_price', '').strip())
+        max_bids = int(request.form.get('max_bids', '').strip())
+        quantity = int(request.form.get('quantity', '').strip())
         pass
-    return render_template('create-auction.html')
+
+    return render_template('create-auction.html',active_role=active_role,categories=category_options)
 
 @app.route('/browse')
 def browse():
@@ -293,6 +310,24 @@ def load_categories(rows):
             tree.append(node)
 
     return tree
+
+# Helper function for loading categories in create auction
+def flatten_categories_for_select(nodes, result=None, level=0):
+    if result is None:
+        result = []
+
+    for node in nodes:
+        # usually sellers should not list directly under root "All"
+        if node['name'].lower() != 'all':
+            result.append({
+                'name': node['name'],
+                'display_name': ('-- ' * level) + node['name']
+            })
+
+        if node['children']:
+            flatten_categories_for_select(node['children'], result, level + 1)
+
+    return result
 
 if __name__ == '__main__':
     app.run(debug=True)         # Set debug=True for development to allow auto-reloading 

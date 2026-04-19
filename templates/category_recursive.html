@@ -1,15 +1,26 @@
-<li>
-    {% if category.children %}
-        <details>
-            <summary>{{ category.name }}</summary>
-            <ul>
-                {% for child in category.children %}
-                    {% set category = child %}
-                    {% include 'category_recursive.html' %}
-                {% endfor %}
-            </ul>
-        </details>
-    {% else %}
-        {{ category.name }}
-    {% endif %}
+<li class="mb-2">
+
+{% if category.children %}
+
+    <details>
+        <summary class=" category-link">
+            {{ category.name }}
+        </summary>
+
+        <ul class="list-unstyled ml-3 mt-2">
+            {% for child in category.children %}
+                {% set category = child %}
+                {% include 'category_recursive.html' %}
+            {% endfor %}
+        </ul>
+    </details>
+
+{% else %}
+
+    <a href="{{ url_for('browse', category=category.name) }}" class="category-link">
+       {{ category.name }}
+    </a>
+
+{% endif %}
+
 </li>

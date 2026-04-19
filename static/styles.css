@@ -77,6 +77,11 @@ html {
   border-right: 1px solid #ddd;
 }
 
+.sidebar a{
+  text-decoration: none;
+  color: black;
+}
+
 .sidebar ul {
   list-style: none;
   padding-left: 10px;

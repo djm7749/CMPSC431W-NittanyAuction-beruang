@@ -1,129 +1,47 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Bidder Dashboard</title>
-    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css"
-          integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
-    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
-</head>
-<body>
-    <!-- NAVBAR -->
-    <nav class="navbar navbar-expand-lg navbar-light bg-light fixed-top">
-        <div class="container-fluid">
+{% extends 'layout.html' %}
 
-            <a class="navbar-brand text-dark" style="font-weight: bold;" href="/">NITTANY AUCTION</a>
+{% block title %} Seller Dashboard {% endblock %}
 
-            <div class="d-flex">
-                <!-- This will change the navbar according to user role -->
-                {% if active_role == 'Seller' %}
-                    <a href="/seller_dashboard" class="nav-link text-dark">My Listings</a>
-                {% else %}
-                    <a href="/bidder_dashboard" class="nav-link text-dark">My Bids</a>
-                {% endif %}
-                <a href="/browse" class="nav-link text-dark">Browse</a>
-             <!-- <a href="" class="nav-link text-dark">Category</a> -->
-            </div>
-
-
-            <!-- <div class="mx-auto">
-                <form class="form-inline my-2 my-lg-0">
-                    <input class="form-control mr-sm-2" type="search" placeholder="Search" aria-label="Search">
-                    <button class="btn btn-outline-success my-2 my-sm-0" type="submit">Search</button>
-                </form>
-            </div> -->
-
-            <div class="ml-auto">
-                <a href="/account" class="btn btn-primary mr-2">My Account</a>
-                <a href="/" class="btn btn-outline-secondary">Logout</a>
-            </div>
-        </div>
-    </nav>
+{% block content %}
 
     <!-- MAIN CONTENT -->
-
-    <div class="browse-dashboard">
-        <!-- SIDEBAR -->
-        <div class="sidebar">
-            <h5 class="sidebar-title">
-                Category
-            </h5>
-            <ul>
-                {% for category in categories %}
-                    {% include 'category_recursive.html' %}
-                {% endfor %}
-            </ul>
-        </div>
-
-        <!-- title -->
-        <div class="container mt-4 text-center">
-            <h1>Discover new items</h1>
-            <p>Lets see what the community has to offer</p>
-        </div>
-
-        <!-- search bar -->
-        <div class="container text-center search-section" style="margin-top: 5vh;">
-            <!-- <h2 class="mb-4">Search for items</h2> -->
-
-            <form class="d-flex justify-content-center">
-                <input class="form-control mr-2 search-input w-50" type="search" name="q" placeholder="Search items..." value="{{ request.args.get('q','') }}" style="width: 400px;">
-                <button class="btn btn-primary search-button" type="submit">Search</button>
-            </form>
-        </div>
-
-        <div class="container-fluid mt-4 bg-light p-4 px-4 rounded" style="height: 100vh">
-            <!-- <h2>Current Bids</h2>
-            <p>Here you can see all your current bids.</p> -->
-            <!-- LIST OF AUCTIONS -->
-        <div class="row justify-content-start mt-3">
-            <!--No results-->
-            {% if items|length == 0 %}
-                <div class="text-center w-100 mt-4">
-                    <h5>No products found.</h5>
-                    {% if request.args.get('q') %}
-                        <p>No results matched "{{ request.args.get('q') }}".</p>
-                    {% endif %}
-                </div>
-            {% endif %}
-
-            {% for item in items %}
-            <div class="col-xl-2 col-lg-3 col-md-6 col-sm-12 mb-3 d-flex justify-content-center"> {# adjust here for card per page#}
-
-                <div class="card auction-card">
-                    <div class="card mb-4">
-
-                        <img
-                            src="{{ url_for('static', filename='images/' + (item.image if item.image else 'default-auction.jpg')) }}"
-                            class="card-img-top">
-
-                        <div class="card-body">
-                            <h5 class="card-title">{{ item.name }}</h5>
-                            <p class="card-text text-muted mb-1" style="font-size: 14px;">{{ item.description }}</p>
-                            <p class="card-text mb-1"><strong>Category:</strong> {{ item.category }}</p>
-                            <p class="card-text mb-1"><strong>Seller:</strong> {{ item.seller }}</p>
-                            <p class="card-text">Current Bid: ${{ item.price }}</p>
-                            <a href="#" class="btn btn-primary">Place Bid</a>
-                        </div>
-
-                    </div>
-                </div>
-            </div>
-        {% endfor %}
-        </div>
-
-        <div class="d-flex justify-content-center align-items-center mt-4">
-            {% if has_prev %}
-                <a href="{{ url_for('browse', page=page-1, q=request.args.get('q','')) }}" class="btn btn-outline-secondary mr-2">Previous</a>
-            {% endif %}
-
-            <span class="mx-3 font-weight-bold">Page {{ page }}</span>
-
-            {% if has_next %}
-                <a href="{{ url_for('browse', page=page+1, q=request.args.get('q','')) }}" class="btn btn-outline-secondary ml-2">Next</a>
-            {% endif %}
-        </div>
-        </div>
+    <div class="container mt-4">
+        <h1>Bidder Dashboard</h1>
+        <p>Welcome to your bidder dashboard!</p>
     </div>
 
-</body>
-</html>
+    <div class="container mt-4 bg-light p-4 rounded">
+        <h2>Current Bids</h2>
+        <p>Here you can see all your current bids.</p>
+    </div>
+
+{#    <div class="container mt-4 bg-light p-4 rounded">#}
+{#        <h2>Browse Auctions</h2>#}
+{#        <p>Here you can browse ongoing auctions and your bids.</p>#}
+{##}
+{#    <!-- LIST OF AUCTIONS -->#}
+{#    <div class="row justify-content-start mt-3">#}
+{#        {% for item in items %}#}
+{#        <div class="col-lg-3 mb-3 d-flex justify-content-center">#}
+{##}
+{#            <div class="card auction-card">#}
+{#                <div class="card mb-4">#}
+{#            #}
+{#                    <img #}
+{#                        src="{{ url_for('static', filename='images/' + (item.image if item.image else 'default-auction.jpg')) }}" #}
+{#                        class="card-img-top">#}
+{##}
+{#                    <div class="card-body">#}
+{#                        <h5 class="card-title">{{ item.name }}</h5>#}
+{#                        <p class="card-text">Current Bid: ${{ item.price }}</p>#}
+{#                        <a href="#" class="btn btn-primary">Place Bid</a>#}
+{#                    </div>#}
+{##}
+{#                </div>#}
+{#            </div>#}
+{#        </div>#}
+{#    {% endfor %}#}
+{#    </div>#}
+{#    </div>#}
+
+{% endblock %}

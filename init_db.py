@@ -18,10 +18,10 @@ def init_db():
         print("Database already exists. Skipping initialization.")
         return
 
-    print("Initializing database...")
-
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
+
+    cursor.execute("PRAGMA foreign_keys = ON")
 
     cursor.execute("""
         CREATE TABLE Users (
@@ -31,15 +31,16 @@ def init_db():
     """)
 
     cursor.execute("""
-       CREATE TABLE Bidders (
-           email TEXT PRIMARY KEY,
-           first_name TEXT,
-           last_name TEXT,
-           age INTEGER,
-           home_address_id INTEGER,
-           major TEXT,
-           FOREIGN KEY (email) REFERENCES Users (email)
-       );
+        CREATE TABLE Bidders( 
+            email TEXT PRIMARY KEY, 
+            first_name TEXT, 
+            last_name TEXT, 
+            age INTEGER, 
+            home_address_id TEXT, 
+            major TEXT, 
+            FOREIGN KEY(email) REFERENCES Users(email), 
+            FOREIGN KEY(home_address_id) REFERENCES Address(address_id)
+        );
     """)
 
     cursor.execute("""
@@ -63,8 +64,7 @@ def init_db():
     cursor.execute("""
         CREATE TABLE Categories(
             category_name TEXT PRIMARY KEY,
-            parent_category TEXT,
-            FOREIGN KEY (parent_category) REFERENCES Categories (category_name)
+            parent_category TEXT
         );
     """)
 
@@ -88,7 +88,7 @@ def init_db():
 
     cursor.execute("""
        CREATE TABLE Bids(
-           bid_id INTEGER PRIMARY KEY AUTOINCREMENT,
+           bid_id INTEGER PRIMARY KEY,
            seller_email TEXT,
            listing_id INTEGER,
            bidder_email TEXT,
@@ -108,7 +108,7 @@ def init_db():
 
     cursor.execute("""
         CREATE TABLE Address (
-            address_id INTEGER PRIMARY KEY,
+            address_id TEXT PRIMARY KEY,
             zipcode TEXT,
             street_num TEXT,
             street_name TEXT,
@@ -135,7 +135,7 @@ def init_db():
             expire_year INTEGER,
             security_code TEXT,
             owner_email TEXT,
-            FOREIGN KEY (owner_email) REFERENCES Bidders(email)
+            FOREIGN KEY (owner_email) REFERENCES Users(email)
         );
     """)
 
@@ -144,12 +144,12 @@ def init_db():
             transaction_id INTEGER PRIMARY KEY,
             seller_email TEXT,
             listing_id INTEGER,
-            buyer_email TEXT,
+            bidder_email TEXT,
             date TEXT,
             payment REAL,
             FOREIGN KEY (seller_email, listing_id)
                 REFERENCES Auction_Listings(seller_email, listing_id),
-            FOREIGN KEY (buyer_email) REFERENCES Bidders(email)
+            FOREIGN KEY (bidder_email) REFERENCES Bidders(email)
         );
     """)
 
@@ -181,6 +181,14 @@ def init_db():
 
     print("Tables created.")
 
+    # Add helpdeskteam into users
+    cursor.execute("""
+            INSERT OR IGNORE INTO Users (email, password_hash) VALUES (?, ?)
+                 """, (
+                    "helpdeskteam@lsu.edu",
+                    hash_password("helpdesk123")
+                ))
+
     # Populate Users
     try:
         users_df = pd.read_csv("NittanyAuctionDataset_v1/Users.csv")
@@ -188,14 +196,43 @@ def init_db():
         for _, row in users_df.iterrows():
             email = row["email"]
             password = hash_password(row["password"])
-
             cursor.execute("""
                 INSERT INTO Users (email, password_hash)
                 VALUES (?, ?)
-            """, (row["email"], hash_password(row["password"])))
-        print("Users loaded successfully!")
+            """, (row["email"],
+                  hash_password(row["password"])))
+        print("Users loaded.")
     except Exception as e:
         print("Error loading Users:", e)
+
+    # Populate Zipcode_info
+    try:
+        zipcode_df = pd.read_csv(DATASETPATH + "Zipcode_Info.csv")
+
+        for _, row in zipcode_df.iterrows():
+            cursor.execute("""
+                INSERT INTO Zipcode_Info (zipcode, city, state)
+                VALUES (?, ?, ?)
+                """, (row["zipcode"], row["city"], row["state"]))
+
+        print("Zipcode_Info loaded.")
+    except Exception as e:
+        print("Error loading Zipcode_Info:", e)
+
+
+    # Populate Address
+    try:
+        address_df = pd.read_csv(DATASETPATH + "Address.csv")
+
+        for _, row in address_df.iterrows():
+            cursor.execute("""
+                INSERT INTO Address (address_id, zipcode, street_num, street_name)
+                VALUES (?, ?, ?, ?)
+            """, tuple(row))
+
+        print("Address loaded.")
+    except Exception as e:
+        print("Error loading Address:", e)
 
     # Populate Bidders
     try:
@@ -231,7 +268,7 @@ def init_db():
 
         for _, row in helpdesk_df.iterrows():
             cursor.execute("""
-                INSERT INTO Helpdesk (email, position)
+                INSERT OR IGNORE INTO Helpdesk (email, position)
                 VALUES (?, ?)
             """, (row["email"],row["Position"]))
 
@@ -259,9 +296,9 @@ def init_db():
 
         for _, row in listings_df.iterrows():
             cursor.execute("""
-                           INSERT INTO Auction_Listings (seller_email, listing_id, category,auction_title, product_name, product_description,quantity, reserve_price, max_bids, status)
-                           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                           """, (row["Seller_Email"], row["Listing_ID"], row["Category"], row["Auction_Title"], row["Product_Name"], row["Product_Description"], row["Quantity"], row["Reserve_Price"], row["Max_bids"], row.get("Status", 1)))
+                INSERT INTO Auction_Listings (seller_email, listing_id, category,auction_title, product_name, product_description,quantity, reserve_price, max_bids, status)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """, (row["Seller_Email"], row["Listing_ID"], row["Category"], row["Auction_Title"], row["Product_Name"], row["Product_Description"], row["Quantity"], row["Reserve_Price"], row["Max_bids"], row.get("Status", 1)))
 
         print("Auction Listings loaded.")
     except Exception as e:
@@ -273,43 +310,14 @@ def init_db():
 
         for _, row in bids_df.iterrows():
             cursor.execute("""
-                           INSERT INTO Bids (seller_email, listing_id, bidder_email, bid_price)
-                           VALUES (?, ?, ?, ?)
-                           """, (row["Seller_Email"],row["Listing_ID"],row["Bidder_Email"],row["Bid_Price"]))
+                INSERT INTO Bids (bid_id, seller_email, listing_id, bidder_email, bid_price)
+                VALUES (?, ?, ?, ?, ?)
+                """, (row["Bid_ID"], row["Seller_Email"],row["Listing_ID"],row["Bidder_Email"],row["Bid_Price"]))
 
         print("Bids loaded.")
     except Exception as e:
         print("Error loading Bids:", e)
 
-
-    # Populate Zipcode_info
-    try:
-        zipcode_df = pd.read_csv(DATASETPATH + "Zipcode_Info.csv")
-
-        for _, row in zipcode_df.iterrows():
-            cursor.execute("""
-                        INSERT INTO Zipcode_Info (zipcode, city, state)
-                        VALUES (?, ?, ?)
-                        """, (row["zipcode"], row["city"], row["state"]))
-
-        print("Zipcode_Info loaded.")
-    except Exception as e:
-        print("Error loading Zipcode_Info:", e)
-
-
-    # Populate Address
-    try:
-        address_df = pd.read_csv(DATASETPATH + "Address.csv")
-
-        for _, row in address_df.iterrows():
-            cursor.execute("""
-                        INSERT INTO Address (address_id, zipcode, street_num, street_name)
-                        VALUES (?, ?, ?, ?)
-                        """, (row["address_id"], row["zipcode"], row["street_num"], row["street_name"]))
-
-        print("Address loaded.")
-    except Exception as e:
-        print("Error loading Address:", e)
 
 
     # Populate Local_Vendors
@@ -341,22 +349,22 @@ def init_db():
     except Exception as e:
         print("Error loading Credit_Cards:", e)
 
-
     # Populate Transactions
     try:
-        cards_df = pd.read_csv(DATASETPATH + "Credit_Cards.csv")
+        trans_df = pd.read_csv(DATASETPATH + "Transactions.csv")
 
-        for _, row in cards_df.iterrows():
+        for _, row in trans_df.iterrows():
             cursor.execute("""
-                        INSERT INTO Credit_Cards (credit_card_num, card_type, expire_month, expire_year, security_code, owner_email)
-                        VALUES (?, ?, ?, ?, ?, ?)
-                        """, (row["credit_card_num"], row["card_type"], row["expire_month"], row["expire_year"], row["security_code"], row["Owner_email"]))
+                INSERT INTO Transactions (transaction_id, seller_email, listing_id, bidder_email,
+                                                         date, payment)
+                VALUES (?, ?, ?, ?, ?, ?)
+                """, (row["Transaction_ID"], row["Seller_Email"], row["Listing_ID"], row["Bidder_Email"],
+                                     row["Date"], row["Payment"]))
 
-        print("Credit_Cards loaded.")
+        print("Transactions loaded.")
     except Exception as e:
-        print("Error loading Credit_Cards:", e)
+        print("Error loading Transactions:", e)
 
-    
     # Populate Ratings
     try:
         rating_df = pd.read_csv(DATASETPATH + "Ratings.csv")

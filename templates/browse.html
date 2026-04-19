@@ -8,116 +8,149 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
 </head>
 <body>
-    <!-- NAVBAR -->
-    <nav class="navbar navbar-expand-lg navbar-light bg-light fixed-top">
-        <div class="container-fluid">
 
-            <a class="navbar-brand text-dark" style="font-weight: bold;" href="/">NITTANY AUCTION</a>
+<!-- NAVBAR -->
+<nav class="navbar navbar-expand-lg navbar-light bg-light">
 
-            <div class="d-flex">
-                <a href="/browse" class="nav-link text-dark">Browse</a>
-                <a href="/bidder_dashboard" class="nav-link text-dark">My Bids</a>
-{#                <a href="" class="nav-link text-dark">Category</a>#}
-            </div>
+    <a class="navbar-brand font-weight-bold">
+        NITTANY AUCTION
+    </a>
 
-            <div class="mx-auto">
-                <form class="form-inline my-2 my-lg-0">
-                    <input class="form-control mr-sm-2" type="search" placeholder="Search" aria-label="Search">
-                    <button class="btn btn-outline-success my-2 my-sm-0" type="submit">Search</button>
-                </form>
-            </div>
+    <div class="mr-3">
 
-            <div>
-                <a href="/user_account" class="btn btn-primary mr-2">My Account</a>
-                <a href="/" class="btn btn-outline-secondary">Logout</a>
-            </div>
-        </div>
-    </nav>
+        {% if session.get('role') == 'Bidder' %}
+            <a href="{{ url_for('bidder_dashboard') }}"
+               class="btn btn-outline-primary">
+               Return Dashboard
+            </a>
+
+        {% elif session.get('role') == 'Seller' %}
+            <a href="{{ url_for('seller_dashboard') }}"
+               class="btn btn-outline-primary">
+               Return Dashboard
+            </a>
+        {% endif %}
+
+    </div>
+
+    <div class="mx-auto">
+        <form method="GET" action="{{ url_for('browse') }}" class="form-inline">
+            <input class="form-control mr-2"
+                   type="search"
+                   name="q"
+                   placeholder="Search"
+                   value="{{ request.args.get('q','') }}">
+            <button class="btn btn-outline-success">Search</button>
+        </form>
+    </div>
+
+    <div>
+        <a href="/user_account" class="btn btn-primary mr-2">My Account</a>
+        <a href="/logout" class="btn btn-outline-secondary">Logout</a>
+    </div>
+
+</nav>
+
+<div class="container-fluid">
+<div class="row">
+
+    <!-- SIDEBAR -->
+    <div class="col-md-2 bg-light pt-3">
+
+        <h5>Category</h5>
+
+        <ul class="pl-3">
+            {% for category in categories %}
+                {% include 'category_recursive.html' %}
+            {% endfor %}
+        </ul>
+
+    </div>
 
     <!-- MAIN CONTENT -->
+    <div class="col-md-10">
 
-    <div class="browse-dashboard">
-        <!-- SIDEBAR -->
-        <div class="sidebar">
-            <h5 class="sidebar-title">
-                Category
-            </h5>
-            <ul>
-                {% for category in categories %}
-                    {% include 'category_recursive.html' %}
-                {% endfor %}
-            </ul>
-        </div>
-
-        <!-- title -->
         <div class="container mt-4 text-center">
-            <h1>Discover new items</h1>
-            <p>Lets see what the community has to offer</p>
+            <h1>Discover New Items</h1>
+            <p>See what the community has to offer</p>
         </div>
 
-        <!-- search bar -->
-        <div class="container text-center search-section" style="margin-top: 5vh;">
-            <!-- <h2 class="mb-4">Search for items</h2> -->
+        <!-- PRODUCTS -->
+        <div class="container-fluid mt-4">
 
-            <form class="d-flex justify-content-center">
-                <input class="form-control mr-2 search-input w-50" type="search" name="q" placeholder="Search items..." value="{{ request.args.get('q','') }}" style="width: 400px;">
-                <button class="btn btn-primary search-button" type="submit">Search</button>
-            </form>
-        </div>
+            <div class="row">
 
-        <div class="container-fluid mt-4 bg-light p-4 px-4 rounded" style="height: 100vh">
-            <!-- <h2>Current Bids</h2>
-            <p>Here you can see all your current bids.</p> -->
-            <!-- LIST OF AUCTIONS -->
-        <div class="row justify-content-start mt-3">
-            <!--No results-->
-            {% if items|length == 0 %}
-                <div class="text-center w-100 mt-4">
+                {% if items|length == 0 %}
+                <div class="col-12 text-center">
                     <h5>No products found.</h5>
-                    {% if request.args.get('q') %}
-                        <p>No results matched "{{ request.args.get('q') }}".</p>
-                    {% endif %}
                 </div>
-            {% endif %}
+                {% endif %}
 
-            {% for item in items %}
-            <div class="col-xl-2 col-lg-3 col-md-6 col-sm-12 mb-3 d-flex justify-content-center"> {# adjust here for card per page#}
+                {% for item in items %}
+                <div class="col-xl-3 col-lg-4 col-md-6 mb-4">
 
-                <div class="card auction-card">
-                    <div class="card mb-4">
+                    <div class="card h-100">
 
-                        <img
-                            src="{{ url_for('static', filename='images/' + (item.image if item.image else 'default-auction.jpg')) }}"
-                            class="card-img-top">
+                        <img src="{{ url_for('static', filename='images/' + (item.image if item.image else 'default-auction.jpg')) }}"
+                             class="card-img-top">
 
-                        <div class="card-body">
-                            <h5 class="card-title">{{ item.name }}</h5>
-                            <p class="card-text text-muted mb-1" style="font-size: 14px;">{{ item.description }}</p>
-                            <p class="card-text mb-1"><strong>Category:</strong> {{ item.category }}</p>
-                            <p class="card-text mb-1"><strong>Seller:</strong> {{ item.seller }}</p>
-                            <p class="card-text">Current Bid: ${{ item.price }}</p>
-                            <a href="#" class="btn btn-primary">Place Bid</a>
+                        <div class="card-body d-flex flex-column">
+                            <h5 class="card-title mb-1">{{ item.title }}</h5>
+                            <p>{{ item.name }}</p>
+
+                            <p class="text-muted small">
+                                {{ item.description if item.description else 'No description' }}
+                            </p>
+
+                            <p><strong>Category:</strong> {{ item.category }}</p>
+
+                            <p><strong>Seller:</strong> {{ item.seller }}</p>
+
+                            <p><strong>Price:</strong> ${{ item.price }}</p>
+
+                            <a href="{{ url_for('view_listing', listing_id=item.id) }}"
+                               class="btn btn-primary mt-auto btn-block">
+                               View / Bid
+                            </a>
+
                         </div>
 
                     </div>
+
                 </div>
+                {% endfor %}
+
             </div>
-        {% endfor %}
+
+            <!-- PAGINATION -->
+            <div class="d-flex justify-content-center mb-4">
+
+                {% if has_prev %}
+                <a href="{{ url_for('browse', page=page-1, q=request.args.get('q','')) }}"
+                   class="btn btn-outline-secondary mr-2">
+                   Previous
+                </a>
+                {% endif %}
+
+                <span class="mx-3 font-weight-bold pt-2">
+                    Page {{ page }}
+                </span>
+
+                {% if has_next %}
+                <a href="{{ url_for('browse', page=page+1, q=request.args.get('q','')) }}"
+                   class="btn btn-outline-secondary ml-2">
+                   Next
+                </a>
+                {% endif %}
+
+            </div>
+
         </div>
 
-        <div class="d-flex justify-content-center align-items-center mt-4">
-            {% if has_prev %}
-                <a href="{{ url_for('browse', page=page-1, q=request.args.get('q','')) }}" class="btn btn-outline-secondary mr-2">Previous</a>
-            {% endif %}
-
-            <span class="mx-3 font-weight-bold">Page {{ page }}</span>
-
-            {% if has_next %}
-                <a href="{{ url_for('browse', page=page+1, q=request.args.get('q','')) }}" class="btn btn-outline-secondary ml-2">Next</a>
-            {% endif %}
-        </div>
-        </div>
     </div>
 
+</div>
+</div>
+
 </body>
-</html> 
+</html>

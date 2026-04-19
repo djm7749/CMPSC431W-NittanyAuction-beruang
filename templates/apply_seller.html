@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Seller Redirect Here</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css"
+          integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+
+<!-- NAVBAR -->
+<nav class="navbar navbar-expand-lg navbar-light bg-light">
+
+    <a class="navbar-brand font-weight-bold" href="/">
+        NITTANY AUCTION
+    </a>
+
+    <div class="ml-auto">
+        <a href="{{ url_for('bidder_dashboard') }}"
+           class="btn btn-outline-primary mr-2">
+           Dashboard
+        </a>
+
+        <a href="{{ url_for('logout') }}"
+           class="btn btn-outline-secondary">
+           Logout
+        </a>
+    </div>
+
+</nav>
+
+<!-- MAIN CONTENT -->
+<div class="container mt-5">
+
+    <div class="row justify-content-center">
+
+        <div class="col-md-8">
+
+            <div class="card shadow-sm">
+
+                <div class="card-body p-4">
+
+                    <h2 class="mb-3">
+                        Apply to Become Seller
+                    </h2>
+
+                    <p class="text-muted">
+                        Submit a request to the HelpDesk team for approval.
+                        Once approved, you will be able to create auctions
+                        and sell items on Nittany Auction.
+                    </p>
+
+                    <form method="POST"
+                          action="{{ url_for('apply_seller') }}">
+
+                        <div class="form-group">
+
+                            <label>
+                                Why would you like seller access?
+                            </label>
+
+                            <textarea
+                                class="form-control"
+                                name="description"
+                                rows="5"
+                                placeholder="Example: I would like to sell textbooks, electronics, and furniture."
+                                required></textarea>
+
+                        </div>
+
+                        <button type="submit"
+                                class="btn btn-success btn-block">
+
+                            Submit Application
+
+                        </button>
+
+                    </form>
+
+                    <a href="{{ url_for('bidder_dashboard') }}"
+                       class="btn btn-link btn-block mt-3">
+
+                        Cancel
+
+                    </a>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+</body>
+</html>

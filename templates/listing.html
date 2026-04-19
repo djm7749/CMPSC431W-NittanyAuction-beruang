@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <head>
+        <meta charset="UTF-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css"
+              integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh"
+              crossorigin="anonymous">
+        <title>Listing Info</title>
+    </head>
+</head>
+<body>
+    <!-- NAVBAR -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+        <div class="container-fluid">
+
+            <a class="navbar-brand text-dark" style="font-weight: bold;">NITTANY AUCTION</a>
+
+
+            <div class="d-flex">
+                <a href="/browse" class="nav-link text-dark">Browse</a>
+            </div>
+
+            <div class="mx-auto">
+                <form method="GET" action="{{ url_for('browse') }}" class="form-inline">
+                    <input class="form-control mr-2"
+                           type="search"
+                           name="q"
+                           placeholder="Search">
+                    <button class="btn btn-outline-success">Search</button>
+                </form>
+            </div>
+
+
+            <div>
+                <!-- <a href="/user_account" class="btn btn-primary mr-2">My Account</a> -->
+                <!-- Seller Probably Have no UserProfile Page Account -->
+                {% if session.get('role') == 'Seller' %}
+                <a href="{{ url_for('seller_dashboard') }}"
+                   class="btn btn-outline-primary mr-2">
+                    Return To Dashboard
+                </a>
+                {% else %}
+                <a href="{{ url_for('bidder_dashboard') }}"
+                   class="btn btn-outline-primary mr-2">
+                    Return To Dashboard
+                </a>
+                {% endif %}
+                <a href="/user_account" class="btn btn-primary mr-2">My Account</a>
+                <a href="/logout" class="btn btn-outline-secondary">Logout</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Listing Info -->
+    <div class="bg-light p-4 rounded">
+        <h2>{{ listing['Product_Name'] }}</h2>
+        <p>{{ listing['Product_Description'] }}</p>
+        <p><strong>Category:</strong> {{ listing['Category'] }}</p>
+        <p><strong>Seller:</strong> {{ listing['Seller_Email'] }}</p>
+        <p><strong>Current Highest Bid:</strong> ${{ highest_bid }}</p>
+    </div>
+
+    <!-- Error -->
+    {% if error %}
+    <div class="alert alert-danger mt-3">
+        {{ error }}
+    </div>
+    {% endif %}
+
+    <!-- Bid Form -->
+    <div class="bg-light p-4 rounded mt-4">
+
+        <h3>Place Bid</h3>
+
+        <form method="POST">
+
+            <div class="form-group">
+                <input type="number"
+                       step="0.01"
+                       min="1"
+                       name="bid_price"
+                       class="form-control"
+                       placeholder="Enter your bid"
+                       required>
+            </div>
+
+            <button type="submit" class="btn btn-primary">
+                Submit Bid
+            </button>
+
+        </form>
+
+    </div>
+
+    <!-- Bid History -->
+    <div class="bg-light p-4 rounded mt-4">
+        <h3>Bid History</h3>
+        <ul class="list-group">
+            {% for bid in bids %}
+            <li class="list-group-item d-flex justify-content-between">
+                <span>{{ bid['Bidder_Email'] }}</span>
+                <strong>${{ bid['Bid_price'] }}</strong>
+            </li>
+            {% endfor %}
+
+            {% if bids|length == 0 %}
+            <li class="list-group-item">No bids yet.</li>
+            {% endif %}
+        </ul>
+    </div>
+</body>
+</html>

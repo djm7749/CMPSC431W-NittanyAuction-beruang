@@ -12,23 +12,23 @@
     <nav class="navbar navbar-expand-lg navbar-light bg-light" >
         <div class="container-fluid">
 
-            <a class="navbar-brand text-dark" style="font-weight: bold;" href="/">NITTANY AUCTION</a>
+            <a class="navbar-brand text-dark" style="font-weight: bold;">NITTANY AUCTION</a>
 
             <div class="d-flex">
                 <a href="/seller_dashboard" class="nav-link text-dark">My Listings</a>
-                <a href="" class="nav-link text-dark">Category</a>
+                <a href="/browse" class="nav-link text-dark">Browse</a>
             </div>
 
-            <div class="mx-auto">   
-                <form class="form-inline my-2 my-lg-0">
+            <div class="mx-auto">
+                <form method="GET" action="{{ url_for('browse') }}" class="form-inline my-2 my-lg-0">
                     <input class="form-control mr-sm-2" type="search" placeholder="Search" aria-label="Search">
                     <button class="btn btn-outline-success my-2 my-sm-0" type="submit">Search</button>
                 </form>
             </div>
 
             <div>
-                <a href="" class="btn btn-primary mr-2">My Account</a>
-                <a href="/" class="btn btn-outline-secondary">Logout</a>
+                <a href="/user_account" class="btn btn-primary mr-2">My Account</a>
+                <a href="/logout" class="btn btn-outline-secondary">Logout</a>
             </div>
         </div>
     </nav>
@@ -41,30 +41,75 @@
         <!-- CREATE AUCTION FORM -->
         <form method="POST" action="{{ url_for('create_auction') }}" enctype="multipart/form-data">
             <div class="form-group text-left">
+                <label for="title">Auction Title</label>
+                <input type="text"
+                       class="form-control"
+                       id="title"
+                       name="title"
+                       placeholder="Enter listing title"
+                       required>
+            </div>
+
+            <div class="form-group text-left">
                 <label for="name">Item Name</label>
-                <input type="text" class="form-control" id="name" name="name" placeholder="Enter item name" required>   
-            </div>  
+                <input type="text"
+                       class="form-control"
+                       id="name"
+                       name="name"
+                       placeholder="Enter item name"
+                       required>
+            </div>
+
             <div class="form-group text-left">
                 <label for="description">Description</label>
                 <textarea class="form-control" id="description" name="description" rows="3" placeholder="Enter item description" required></textarea>
             </div>
+
             <div class="form-group text-left">
                 <label for="condition">Condition</label>
-                <textarea class="form-control" id="description" name="description" rows="3" placeholder="Enter item condition" required></textarea>
+                <input type="text"
+                       class="form-control"
+                       name="condition"
+                       placeholder="New / Used / Like New"
+                       required>
+            </div>
+
+            <div class="form-group text-left">
+                <label>Quantity</label>
+                <input type="number" name="quantity" min="1" value="1">
+            </div>
+
+            <div class="form-group">
+                <label>Category</label>
+                <select class="form-control" name="category" required>
+                    {% for c in categories %}
+                    <option value="{{ c['category_name'] }}">{{ c['category_name'] }}</option>
+                    {% endfor %}
+                </select>
             </div>
 
             <!-- Daniel: reserve place to implement choose from category-->
 
             <div class="form-group text-left">
                 <label for="reserve_price">Reserve Price</label>
-                <input type="number" step="0.01" class="form-control" id="starting_price" name="starting_price" placeholder="Enter starting price" required>
+                <input type="number" step="0.01" class="form-control" id="reserve_price" name="reserve_price" placeholder="Enter reserve price" required>
+            </div>
+
+            <div class="form-group text-left">
+                <label>Max Bids</label>
+                <input type="number" class="form-control" id="max_bids" name="max_bids" placeholder="Enter maximum number of bids" min="1" required>
             </div>
 
             <div class="form-group text-left">
                 <label for="image">Image</label>
                 <input type="file" class="form-control-file" id="image" name="image">
             </div>
-            <button type="submit" class="btn btn-primary">Create Auction</button>
+            <button type="submit" class="btn btn-primary">
+                Create Auction
+            </button>
+            <a href="/seller_dashboard" class="btn btn-secondary ml-2">
+                Cancel
+            </a>
         </form>
     </div>
 

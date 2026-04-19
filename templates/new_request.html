@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Submit New Request</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css"
+          integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+
+<!-- NAVBAR -->
+<nav class="navbar navbar-expand-lg navbar-light bg-light">
+
+    <a class="navbar-brand font-weight-bold">
+        NITTANY AUCTION
+    </a>
+
+    <div class="ml-auto">
+
+        <a href="{{ url_for('my_requests') }}"
+           class="btn btn-outline-primary mr-2">
+           My Requests
+        </a>
+
+        <a href="{{ url_for('logout') }}"
+           class="btn btn-outline-secondary">
+           Logout
+        </a>
+
+    </div>
+
+</nav>
+
+<!-- MAIN -->
+<div class="container mt-5">
+
+    <div class="row justify-content-center">
+
+        <div class="col-md-8">
+
+            <div class="card shadow-sm">
+
+                <div class="card-body p-4">
+
+                    <h2 class="mb-3">
+                        Submit New Request
+                    </h2>
+
+                    <p class="text-muted">
+                        Send a request to the HelpDesk team or a specific staff member.
+                    </p>
+
+                    <form method="POST"
+                          action="{{ url_for('new_request') }}">
+
+                        <!-- SEND TO -->
+                        <div class="form-group">
+
+                            <label>
+                                Send To
+                            </label>
+
+                            <select class="form-control"
+                                    name="helpdesk_email"
+                                    required>
+
+                                {% for staff in helpdesks %}
+                                <option value="{{ staff.email }}">
+                                    {{ staff.email }}
+                                </option>
+                                {% endfor %}
+
+                            </select>
+
+                        </div>
+
+                        <!-- REQUEST TYPE -->
+                        <div class="form-group">
+
+                            <label>
+                                Request Type
+                            </label>
+
+                            <select class="form-control"
+                                    name="request_type"
+                                    required>
+
+                                <option value="">
+                                    Select request type
+                                </option>
+
+                                <option value="SellerApplication">
+                                    About Seller Application
+                                </option>
+
+                                <option value="ChangeID">
+                                    Change ID
+                                </option>
+
+                                <option value="AddCategory">
+                                    Add Category
+                                </option>
+
+                                <option value="MarketAnalysis">
+                                    Market Analysis
+                                </option>
+
+                                <option value="Support">
+                                    Support
+                                </option>
+
+                                <option value="Other">
+                                    Other
+                                </option>
+
+                            </select>
+
+                        </div>
+
+                        <!-- DESCRIPTION -->
+                        <div class="form-group">
+
+                            <label>
+                                Description
+                            </label>
+
+                            <textarea
+                                class="form-control"
+                                name="description"
+                                rows="6"
+                                placeholder="Describe your request..."
+                                required></textarea>
+
+                        </div>
+
+                        <!-- SUBMIT -->
+                        <button type="submit"
+                                class="btn btn-primary btn-block">
+
+                            Submit Request
+
+                        </button>
+
+                    </form>
+
+                    <a href="{{ url_for('my_requests') }}"
+                       class="btn btn-link btn-block mt-3">
+
+                        Cancel
+
+                    </a>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+</body>
+</html>

@@ -9,90 +9,487 @@
 </head>
 <body>
 
+<!-- NAVBAR -->
+<nav class="navbar navbar-expand-lg navbar-light bg-light">
+    <div class="container-fluid">
 
-    <!-- Daniel : Navbar need to change according to user role, right? -->
-     
-    <!-- NAVBAR -->
-    <nav class="navbar navbar-expand-lg navbar-light bg-light">
-        <div class="container-fluid">
+        <a class="navbar-brand text-dark font-weight-bold" href="/">
+            NITTANY AUCTION
+        </a>
 
-            <a class="navbar-brand text-dark" style="font-weight: bold;" href="/">NITTANY AUCTION</a>
+        <div class="mr-3">
 
-            <div class="d-flex">
-                <a href="/browse" class="nav-link text-dark">Browse</a>
-                <a href="/bidder_dashboard" class="nav-link text-dark">My Bids</a>
-{#                <a href="" class="nav-link text-dark">Category</a>#}
-            </div>
+            {% if session.get('role') == 'Seller' %}
+                <a href="{{ url_for('seller_dashboard') }}"
+                   class="btn btn-outline-primary">
+                   Dashboard
+                </a>
 
-            <div class="mx-auto">
-                <form class="form-inline my-2 my-lg-0">
-                    <input class="form-control mr-sm-2" type="search" placeholder="Search" aria-label="Search">
-                    <button class="btn btn-outline-success my-2 my-sm-0" type="submit">Search</button>
-                </form>
-            </div>
+            {% elif session.get('role') == 'HelpDesk' %}
+                <a href="{{ url_for('helpdesk_dashboard') }}"
+                   class="btn btn-outline-primary">
+                   Dashboard
+                </a>
 
-            <div>
-                <a href="/user_account" class="btn btn-primary mr-2">My Account</a>
-                <a href="/" class="btn btn-outline-secondary">Logout</a>
-            </div>
+            {% else %}
+                <a href="{{ url_for('bidder_dashboard') }}"
+                   class="btn btn-outline-primary">
+                   Dashboard
+                </a>
+            {% endif %}
+
         </div>
-    </nav>
 
-    <!-- MAIN CONTENT -->
+        <div>
+            <a href="{{ url_for('logout') }}"
+               class="btn btn-outline-secondary">
+               Logout
+            </a>
+        </div>
 
-    <div class="container mt-4 bg-light p-4 rounded">
-        <h2>Account Information</h2>
-        <p>Here you can view and edit your account details.</p>
+    </div>
+</nav>
 
-        <form action="/update_profile" method="POST">
+<!-- MAIN -->
+<div class="container mt-5">
+
+    <div class="bg-light p-4 rounded">
+
+        <h2 class="mb-3">
+            My Account
+        </h2>
+
+        <p class="text-muted">
+            View and update your account information.
+        </p>
+
+        <form action="{{ url_for('update_profile') }}"
+              method="POST">
+
+            <!-- EMAIL -->
             <div class="form-group">
-                <label for="email">User ID (Email Address)</label>
-                <input type="email" class="form-control" id="email" name="email"
-                       value="{{ user_data['email']}}" readonly>
+
+                <label>Email</label>
+
+                <input type="email"
+                       class="form-control"
+                       value="{{ user_data['email'] }}"
+                       readonly>
+
                 <small class="form-text text-danger">
-                    Email changes require a formal request to the HelpDesk.
+                    Email changes require HelpDesk request.
                 </small>
+
+            </div>
+
+            <!-- NAME -->
+            <div class="form-row">
+
+                <div class="form-group col-md-6">
+
+                    <label>First Name</label>
+
+                    <input type="text"
+                           class="form-control"
+                           name="firstName"
+                           value="{{ user_data['first_name'] if user_data['first_name'] else '' }}">
+
+                </div>
+
+                <div class="form-group col-md-6">
+
+                    <label>Last Name</label>
+
+                    <input type="text"
+                           class="form-control"
+                           name="lastName"
+                           value="{{ user_data['last_name'] if user_data['last_name'] else '' }}">
+
+                </div>
+
+            </div>
+
+            <!-- AGE / MAJOR -->
+            <div class="form-row">
+
+                <div class="form-group col-md-6">
+
+                    <label>Age</label>
+
+                    <input type="number"
+                           class="form-control"
+                           name="age"
+                           value="{{ user_data['age'] if user_data['age'] else '' }}">
+
+                </div>
+
+                <div class="form-group col-md-6">
+
+                    <label>Major</label>
+
+                    <input type="text"
+                           class="form-control"
+                           name="major"
+                           value="{{ user_data['major'] if user_data['major'] else '' }}">
+
+                </div>
+
+            </div>
+
+            <!--- CONTACT INFO -->
+
+            <hr>
+
+            <h5 class="mb-3">
+                Contact Information
+            </h5>
+
+            <!-- ADDRESS -->
+            <div class="form-row">
+
+                <div class="form-group col-md-3">
+
+                    <label>
+                        Street Number
+                    </label>
+
+                    <input type="text"
+                           class="form-control"
+                           name="street_num"
+                           value="{{ address_data['street_num'] if address_data else '' }}"
+                           placeholder="123">
+
+                </div>
+
+                <div class="form-group col-md-5">
+
+                    <label>
+                        Street Name
+                    </label>
+
+                    <input type="text"
+                           class="form-control"
+                           name="street_name"
+                           value="{{ address_data['street_name'] if address_data else '' }}"
+                           placeholder="College Ave">
+
+                </div>
+
+                <div class="form-group col-md-4">
+
+                    <label>
+                        City
+                    </label>
+
+                    <input type="text"
+                           class="form-control"
+                           name="city"
+                           value="{{ address_data['city'] if address_data and address_data['city'] else '' }}"
+                           placeholder="State College">
+
+                </div>
+
             </div>
 
             <div class="form-row">
+
                 <div class="form-group col-md-6">
-                    <label for="firstName">First Name</label>
-                    <input type="text" class="form-control" id="firstName" name="firstName"
-                           value="{{ user_data['first_name'] }}" required>
+
+                    <label>
+                        State
+                    </label>
+
+                    <input type="text"
+                           class="form-control"
+                           name="state"
+                           value="{{ address_data['state'] if address_data and address_data['state'] else '' }}"
+                           placeholder="PA">
+
                 </div>
+
                 <div class="form-group col-md-6">
-                    <label for="lastName">Last Name</label>
-                    <input type="text" class="form-control" id="lastName" name="lastName"
-                           value="{{ user_data['last_name'] }}" required>
+
+                    <label>
+                        ZIP Code
+                    </label>
+
+                    <input type="text"
+                           class="form-control"
+                           name="zipcode"
+                           value="{{ address_data['zipcode'] if address_data else '' }}"
+                           placeholder="16801">
+
                 </div>
+
             </div>
+
+            <!-- CREDIT CARDS -->
+            <hr>
+
+            <h5 class="mb-3">
+                Credit Cards
+            </h5>
+
+            <!-- EXISTING CARDS -->
+            {% if credit_cards|length == 0 %}
+
+            <div class="alert alert-info">
+                No credit cards saved.
+            </div>
+
+            {% else %}
+
+            {% for card in credit_cards %}
+
+            <div class="border rounded p-3 mb-3 bg-white">
+
+                <div class="form-row">
+
+                    <div class="form-group col-md-4">
+                        <label>Card Number</label>
+                        <input type="text"
+                               class="form-control"
+                               value="{{ card['credit_card_num'] }}"
+                               readonly>
+                    </div>
+
+                    <div class="form-group col-md-3">
+                        <label>Type</label>
+                        <input type="text"
+                               class="form-control"
+                               value="{{ card['card_type'] }}"
+                               readonly>
+                    </div>
+
+                    <div class="form-group col-md-2">
+                        <label>Month</label>
+                        <input type="text"
+                               class="form-control"
+                               value="{{ card['expire_month'] }}"
+                               readonly>
+                    </div>
+
+                    <div class="form-group col-md-2">
+                        <label>Year</label>
+                        <input type="text"
+                               class="form-control"
+                               value="{{ card['expire_year'] }}"
+                               readonly>
+                    </div>
+
+                    <div class="form-group col-md-1">
+                        <label>CVV</label>
+                        <input type="text"
+                               class="form-control"
+                               value="{{ card['security_code'] }}"
+                               readonly>
+                    </div>
+
+                    <div class="form-group col-md-2">
+
+                        <a href="{{ url_for('delete_card',
+                                            card_num=card['credit_card_num']) }}"
+                           class="btn btn-danger btn-block">
+
+                           Remove
+
+                        </a>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+            {% endfor %}
+            {% endif %}
+
+            <!-- ADD NEW CARD -->
+            <div class="border rounded p-4 bg-white mt-4">
+
+                <h6 class="mb-3">
+                    Add New Credit Card
+                </h6>
+
+                <div class="form-row">
+
+                    <div class="form-group col-md-4">
+
+                        <label>Card Number</label>
+
+                        <input type="text"
+                               class="form-control"
+                               name="new_card_number"
+                               placeholder="1234123412341234">
+
+                    </div>
+
+                    <div class="form-group col-md-3">
+
+                        <label>Card Type</label>
+
+                        <select class="form-control"
+                                name="new_card_type">
+
+                            <option value="">
+                                Select
+                            </option>
+
+                            <option value="Visa">
+                                Visa
+                            </option>
+
+                            <option value="MasterCard">
+                                MasterCard
+                            </option>
+
+                            <option value="Discover">
+                                Discover
+                            </option>
+
+                            <option value="Amex">
+                                American Express
+                            </option>
+
+                        </select>
+
+                    </div>
+
+                    <div class="form-group col-md-2">
+
+                        <label>Month</label>
+
+                        <input type="number"
+                               class="form-control"
+                               name="new_exp_month"
+                               min="1"
+                               max="12"
+                               placeholder="MM">
+
+                    </div>
+
+                    <div class="form-group col-md-2">
+
+                        <label>Year</label>
+
+                        <input type="number"
+                               class="form-control"
+                               name="new_exp_year"
+                               placeholder="YYYY">
+
+                    </div>
+
+                    <div class="form-group col-md-1">
+
+                        <label>CVV</label>
+
+                        <input type="text"
+                               class="form-control"
+                               name="new_cvv"
+                               maxlength="4"
+                               placeholder="123">
+
+                    </div>
+
+                </div>
+
+            </div>
+
+            <!-- SELLER INFO -->
+            {% if session.get('role') == 'Seller' %}
+
+            <hr>
+
+            <h5 class="mb-3">
+                Seller Information
+            </h5>
 
             <div class="form-row">
-                <div class="form-group col-md-6">
-                    <label for="password">New Password</label>
-                    <input type="password" class="form-control" id="password" name="password"
-                           placeholder=""> <small class="form-text text-muted">Leave blank to keep current password.</small>
+
+                <div class="form-group col-md-4">
+
+                    <label>Balance</label>
+
+                    <input type="text"
+                           class="form-control"
+                           value="${{ user_data['balance'] if user_data['balance'] else 0 }}"
+                           readonly>
+
                 </div>
-                <div class="form-group col-md-6">
-                    <label for="confirm_password">Confirm New Password</label>
-                    <input type="password" class="form-control" id="confirm_password" name="confirm_password"
-                           placeholder="">
+
+                <div class="form-group col-md-4">
+
+                    <label>Routing Number</label>
+
+                    <input type="text"
+                           class="form-control"
+                           name="routing"
+                           value="{{ user_data['bank_routing_number'] if user_data['bank_routing_number'] else '' }}">
+
                 </div>
+
+                <div class="form-group col-md-4">
+
+                    <label>Account Number</label>
+
+                    <input type="text"
+                           class="form-control"
+                           name="account"
+                           value="{{ user_data['bank_account_number'] if user_data['bank_account_number'] else '' }}">
+
+                </div>
+
             </div>
 
-            <button type="submit" class="btn btn-success">Save Changes</button>
-            <a href="/bidder_dashboard" class="btn btn-secondary">Cancel</a>
+            {% endif %}
+
+            <!-- PASSWORD -->
+            <hr>
+
+            <h5 class="mb-3">
+                Change Password
+            </h5>
+
+            <div class="form-row">
+
+                <div class="form-group col-md-6">
+
+                    <label>New Password</label>
+
+                    <input type="password"
+                           class="form-control"
+                           name="password">
+
+                </div>
+
+                <div class="form-group col-md-6">
+
+                    <label>Confirm Password</label>
+
+                    <input type="password"
+                           class="form-control"
+                           name="confirm_password">
+
+                </div>
+
+            </div>
+
+            <!-- BUTTONS -->
+            <button type="submit"
+                    class="btn btn-success">
+                Save Changes
+            </button>
+
+            <a href="{{ url_for('user_account') }}"
+               class="btn btn-secondary">
+               Refresh
+            </a>
+
         </form>
+
     </div>
 
+</div>
 
-
-
-
-
-    
-
-
-        
 </body>
 </html> 

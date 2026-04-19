@@ -157,22 +157,22 @@ def create_auction():
     active_role = session.get('active_role')
     seller_email = session.get('user_email')
 
-    conn = db_connect()
-    cur = conn.cursor()
-
     # Load category hierarchy
     category_rows = get_categories()
     category_tree = load_categories(category_rows)
     category_options = flatten_categories_for_select(category_tree)
 
     if request.method == 'POST':
+        auction_title = request.form.get('auction_title', '').strip()
         name = request.form.get('name', '').strip()
         description = request.form.get('description', '').strip()
         category = request.form.get('category', '').strip()
-        reserve_price = float(request.form.get('reserve_price', '').strip())
-        max_bids = int(request.form.get('max_bids', '').strip())
-        quantity = int(request.form.get('quantity', '').strip())
-        pass
+        reserve_price = f"${request.form.get('reserve_price', '').strip()}"
+        max_bids = request.form.get('max_bids', '').strip()
+        quantity = request.form.get('quantity', '').strip()
+
+        create_auction_listing(seller_email, auction_title, name, description, category, reserve_price, max_bids,quantity)
+        return redirect(url_for('seller_dashboard'))
 
     return render_template('create-auction.html',active_role=active_role,categories=category_options)
 

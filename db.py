@@ -247,3 +247,20 @@ def get_categories():
 
     conn.close()
     return rows
+
+def create_auction_listing(seller_email,auction_title,name,description,category,reserve_price,max_bids,quantity):
+    conn = db_connect()
+    cur = conn.cursor()
+
+    cur.execute("""
+                INSERT INTO Auction_Listings
+                (Seller_Email,Auction_Title,Product_Name,Product_Description,Category,
+                 Reserve_Price,Max_bids,Quantity,Status)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?,?)
+                """, (
+                    seller_email,auction_title,name,description,category,
+                    reserve_price,max_bids,quantity,0
+                ))
+
+    conn.commit()
+    conn.close()

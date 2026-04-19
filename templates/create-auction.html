@@ -12,6 +12,11 @@
         <!-- CREATE AUCTION FORM -->
         <form method="POST" action="{{ url_for('create_auction') }}" enctype="multipart/form-data">
             <div class="form-group text-left">
+                <label for="auction_title">Auction Title</label>
+                <input type="text" class="form-control" id="auction_title" name="auction_title" placeholder="Enter auction title" required>
+            </div>
+
+            <div class="form-group text-left">
                 <label for="name">Item Name</label>
                 <input type="text" class="form-control" id="name" name="name" placeholder="Enter item name" required>   
             </div>

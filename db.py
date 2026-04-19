@@ -150,14 +150,23 @@ def get_active_auctions(limit=8):
     conn.close()
     return rows
 
-def get_auction_listing(email):
+def get_auction_listing(email, status_filter):
     conn = db_connect()
     cur = conn.cursor()
 
-    cur.execute("""
+    if status_filter == "active":
+        filter_query = "AND Status = 1"
+    elif status_filter == "inactive":
+        filter_query = "AND Status = 0"
+    elif status_filter == "sold":
+        filter_query = "AND Status = 2"
+    else:
+        filter_query = ""
+
+    cur.execute(f"""
                 SELECT Product_Name, Reserve_Price
                 FROM Auction_Listings
-                WHERE Seller_Email = ?
+                WHERE Seller_Email = ? {filter_query}
                 """, (email,))
 
     rows = cur.fetchall()
@@ -259,7 +268,7 @@ def create_auction_listing(seller_email,auction_title,name,description,category,
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?,?)
                 """, (
                     seller_email,auction_title,name,description,category,
-                    reserve_price,max_bids,quantity,0
+                    reserve_price,max_bids,quantity,1
                 ))
 
     conn.commit()

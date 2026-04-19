@@ -12,9 +12,26 @@
         </div>
 
         <p>Here you can create and manage your auctions.</p>
+        <form method="GET" action="{{ url_for('seller_dashboard') }}">
+            <div class="form-group mb-0">
+                <select name="filter" class="form-control form-control-sm" onchange="this.form.submit()">
+                    <option value="all" {% if status_filter == 'all' %}selected{% endif %}>All Listings</option>
+                    <option value="active" {% if status_filter == 'active' %}selected{% endif %}>Active</option>
+                    <option value="inactive" {% if status_filter == 'inactive' %}selected{% endif %}>Inactive</option>
+                    <option value="sold" {% if status_filter == 'sold' %}selected{% endif %}>Sold</option>
+                </select>
+            </div>
+        </form>
+
 
     <!-- LIST OF AUCTIONS -->
     <div class="row justify-content-start mt-3">
+        {% if items|length == 0 %}
+            <div class="col-12">
+                <p>No listings found for this filter.</p>
+            </div>
+        {% endif %}
+
         {% for item in items %}
         <div class="col-lg-3 mb-3 d-flex justify-content-center">
 
@@ -29,7 +46,7 @@
 
                     <div class="card-body">
                         <h5 class="card-title">{{ item.name }}</h5>
-                        <p class="card-text">Current Bid: {{ item.price }}</p>
+                        <p class="card-text">Reserve Price: {{ item.price }}</p>
                         <a href="#" class="btn btn-primary">View/Edit auction</a>
                     </div>
 

@@ -134,7 +134,8 @@ def seller_dashboard():
 
     seller_email = session['user_email']
     active_role = session.get('active_role')
-    seller_rows = get_auction_listing(seller_email)
+    status_filter = request.args.get('filter', 'all')
+    seller_rows = get_auction_listing(seller_email, status_filter)
 
     items = []
 
@@ -145,7 +146,7 @@ def seller_dashboard():
             "image": "default-auction.jpg"  # keep frontend unchanged
         })
 
-    return render_template('seller.html', items=items, active_role=active_role)
+    return render_template('seller.html', items=items, active_role=active_role, status_filter=status_filter)
 
 @app.route('/helpdesk_dashboard')
 def helpdesk_dashboard():

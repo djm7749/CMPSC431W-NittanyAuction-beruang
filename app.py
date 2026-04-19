@@ -143,6 +143,7 @@ def seller_dashboard():
         items.append({
             "name": row[0],  # Product_Name
             "price": row[1],  # Reserve_Price (or current bid if you have it)
+            "status" : row[2],
             "image": "default-auction.jpg"  # keep frontend unchanged
         })
 

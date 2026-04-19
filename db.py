@@ -164,7 +164,7 @@ def get_auction_listing(email, status_filter):
         filter_query = ""
 
     cur.execute(f"""
-                SELECT Product_Name, Reserve_Price
+                SELECT Product_Name, Reserve_Price,Status
                 FROM Auction_Listings
                 WHERE Seller_Email = ? {filter_query}
                 """, (email,))

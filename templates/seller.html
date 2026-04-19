@@ -47,6 +47,16 @@
                     <div class="card-body">
                         <h5 class="card-title">{{ item.name }}</h5>
                         <p class="card-text">Reserve Price: {{ item.price }}</p>
+                        <p class="card-text">
+                            <strong>Status:</strong>
+                            {% if item.status == 1 %}
+                                <span class="badge badge-success">Active</span>
+                            {% elif item.status == 0 %}
+                                <span class="badge badge-secondary">Inactive</span>
+                            {% elif item.status == 2 %}
+                                <span class="badge badge-danger">Sold</span>
+                            {% endif %}
+                        </p>
                         <a href="#" class="btn btn-primary">View/Edit auction</a>
                     </div>
 

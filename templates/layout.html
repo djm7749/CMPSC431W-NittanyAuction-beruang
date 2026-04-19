@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title> {% block title %}Nittany Auction {% endblock %} </title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css">
+</head>
+<body>
+
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+        <div class="container-fluid">
+
+            <a class="navbar-brand text-dark" style="font-weight: bold;" href="/">NITTANY AUCTION</a>
+
+            <div class="d-flex">
+                {%  if active_role == 'Bidder' %}
+                    <a href="/bidder_dashboard" class="nav-link text-dark">My Bids</a>
+                {% elif active_role == 'Seller' %}
+                    <a href="/seller_dashboard" class="nav-link text-dark">My Listings</a>
+                {% endif %}
+                <a href="/browse" class="nav-link text-dark">Browse</a>
+            </div>
+
+            <div class="ml-auto">
+                <a href="/account" class="btn btn-primary mr-2">Account</a>
+                <a href="/" class="btn btn-outline-secondary">Logout</a>
+            </div>
+        </div>
+    </nav>
+
+    <main>
+        {% block content %}
+        {% endblock %}
+    </main>
+
+    <footer class="text-center mt-5">
+        <p> 2026 Nittany Auction Database Project</p>
+    </footer>
+
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

@@ -1,6 +1,9 @@
+from idlelib.debugobj_r import remote_object_tree_item
+
 from flask import Flask, render_template, request, session, redirect, url_for, flash
 import sqlite3
 import hashlib
+from db import *
 
 from pandas.core.config_init import parquet_engine_doc
 
@@ -12,19 +15,10 @@ app.secret_key = "abc123"
 DB_NAME = 'auction.db'
 init_db()
 
-def db_connect():
-    conn = sqlite3.connect(DB_NAME)
-    conn.row_factory = sqlite3.Row
-    return conn
-  
 @app.route('/')
 def index():
     return render_template('index.html')
 
-# Add a new patient
-@app.route('/')
-def home():
-    return render_template('index.html')
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -32,46 +26,32 @@ def login():
         email = request.form['email']
         password = request.form['password']
 
-        conn = db_connect()
-        cur = conn.cursor()
-
-        # Find user (general)
-        cur.execute("SELECT * FROM Users WHERE email = ?", (email,))
-        user = cur.fetchone()
+        user = get_user(email)
 
         if user is None:
-            conn.close()
             return render_template('login.html', error="Email not found")
 
         # Check hashed password
         hashed_input = hashlib.sha256(password.encode()).hexdigest()
         if user['password_hash'] != hashed_input:
-            conn.close()
             return render_template('login.html', error="Password incorrect")
 
-        # Role detection
-        cur.execute("SELECT * FROM Bidders WHERE email = ?", (email,))
-        is_bidder = cur.fetchone()
+        roles = get_user_roles(email)
+        session['user_email'] = email
+        session['roles'] = roles
+        session['active_role'] = roles[0]
 
-        cur.execute("SELECT * FROM Sellers WHERE email = ?", (email,))
-        is_seller = cur.fetchone()
-
-        cur.execute("SELECT * FROM Helpdesk WHERE email = ?", (email,))
-        is_helpdesk = cur.fetchone()
-
-        conn.close()
-
-        if is_helpdesk:
+        if session['active_role'] == "Helpdesk":
             session['user_email'] = email
             session['role'] = 'Helpdesk'
             return redirect(url_for('helpdesk_dashboard'))
 
-        elif is_seller:
+        elif session['active_role'] == "Seller":
             session['user_email'] = email
             session['role'] = 'Seller'
             return redirect(url_for('seller_dashboard'))
 
-        elif is_bidder:
+        elif session['active_role'] == "Bidder":
             session['user_email'] = email
             session['role'] = 'Bidder'
             return redirect(url_for('bidder_dashboard'))
@@ -131,83 +111,41 @@ def signup():
 
     return render_template('signup.html')
 
+from db import get_active_auctions
+
 @app.route('/bidder_dashboard')
 def bidder_dashboard():
 
-    # user_role = session['role']
-
-    conn = db_connect()
-    cur = conn.cursor()
-
-    cur.execute("""
-        SELECT 
-            a.Listing_ID,
-            a.Product_Name AS name,
-            (   
-                SELECT MAX(Bid_Price)
-                FROM Bids b
-                WHERE b.Listing_ID = a.Listing_ID
-            ) AS price
-        FROM Auction_Listings a
-        WHERE a.status = 1
-        ORDER BY a.Listing_ID
-        LIMIT 8
-    """)
-
-    auction_rows = cur.fetchall()
-
-    # cur.execute("""SELECT *
-    #                FROM Categories""")
-    # category_rows = cur.fetchall()
-    conn.close()
+    active_role = session.get('active_role')
+    auction_rows = get_active_auctions()
 
     items = []
     for row in auction_rows:
         items.append({
             "name": row["name"],
-            "price": row["price"] if row["price"] is not None else 0,
+            "price": row["price"] if row["price"] else 0,
             "image": "default-auction.jpg"
         })
 
-    # categories = load_categories(category_rows)
-
-    return render_template('bidder.html', items=items)
+    return render_template('bidder.html', items=items, active_role=active_role)
 
 @app.route('/seller_dashboard')
 def seller_dashboard():
-    
-    # items = [
-    #     {"name": "Laptop", "price": 500, "image": "default-auction.jpg"},
-    #     {"name": "Phone", "price": 300, "image": None},
-    #     {"name": "Headphones", "price": 150, "image": None},
-    #     {"name": "Monitor", "price": 600, "image": None}
-    # ]
 
     seller_email = session['user_email']
-    # seller_role = session['role']
-
-    conn = db_connect()
-    cur = conn.cursor()
-
-    cur.execute("""
-                SELECT Product_Name, Reserve_Price
-                FROM Auction_Listings
-                WHERE Seller_Email = ?
-                """, (seller_email,))
-
-    rows = cur.fetchall()
+    active_role = session.get('active_role')
+    seller_rows = get_auction_listing(seller_email)
 
     items = []
 
-    for row in rows:
+    for row in seller_rows:
         items.append({
             "name": row[0],  # Product_Name
             "price": row[1],  # Reserve_Price (or current bid if you have it)
             "image": "default-auction.jpg"  # keep frontend unchanged
         })
 
-    conn.close()
-    return render_template('seller.html', items=items)
+    return render_template('seller.html', items=items, active_role=active_role)
 
 @app.route('/helpdesk_dashboard')
 def helpdesk_dashboard():
@@ -221,114 +159,20 @@ def create_auction():
         pass
     return render_template('create-auction.html')
 
-@app.route('/user_account')
-def user_account():
-
-    # Get User Session Email
-    user_email = session['user_email']
-    if not user_email:
-        return redirect(url_for('login'))
-
-    # Get detail y fetching data in DB
-    conn = db_connect()
-    cur = conn.cursor()
-
-    cur.execute("""
-                SELECT email, first_name, last_name
-                FROM Bidders
-                WHERE email = ?
-                """, (user_email,))
-    user_row = cur.fetchone()
-    conn.close()
-    return render_template('user-account.html', user_data = user_row)
-
 @app.route('/browse')
 def browse():
 
-    user_role = session.get('role')
-    
+    active_role = session.get('active_role')
+
     page = request.args.get('page', 1, type=int)
     per_page = 24
     offset = (page - 1) * per_page
-
     q = request.args.get('q','').strip()
 
-    conn = db_connect()
-    cur = conn.cursor()
+    auction_rows, total_items = get_browse_items(q, per_page, offset)
+    category_rows = get_categories()
 
-    params = []
-
-    # Add Keyword Filter
-    if q:
-        keyword = f"%{q}%"
-        base_query = """
-        FROM Auction_Listings a
-        LEFT JOIN Local_Vendors lv
-            ON a.Seller_Email = lv.Email
-        LEFT JOIN Bidders bd
-            ON a.Seller_Email = bd.Email
-        WHERE a.status = 1
-            AND (
-                a.Product_Name LIKE ?
-                OR a.Product_Description LIKE ?
-                OR a.Category LIKE ?
-                OR lv.Business_Name LIKE ?
-                OR bd.first_name LIKE ?
-                OR bd.last_name LIKE ?
-                OR (bd.first_name || ' ' || bd.last_name) LIKE ?
-                )
-        """
-        params.extend([keyword, keyword, keyword, keyword, keyword, keyword, keyword])
-
-    else:
-        base_query = """
-        FROM Auction_Listings a
-        LEFT JOIN Local_Vendors lv
-            ON a.Seller_Email = lv.Email
-        LEFT JOIN Bidders bd
-            ON a.Seller_Email = bd.Email
-        WHERE a.status = 1
-        """
-
-    # Count
-    cur.execute(f"""
-                SELECT COUNT(*) AS total
-                {base_query}
-                """, params)
-    total_items = cur.fetchone()["total"]
-
-    cur.execute(f"""
-        SELECT 
-            a.Listing_ID,
-            a.Product_Name AS name,
-            a.Product_Description AS description,
-            a.Category as category,
-            a.Seller_Email AS email,
-            CASE
-                WHEN lv.Business_Name IS NOT NULL THEN lv.Business_Name
-                WHEN bd.first_name IS NOT NULL AND bd.last_name IS NOT NULL
-                    THEN bd.first_name || ' ' || bd.last_name
-                WHEN bd.first_name IS NOT NULL
-                    THEN bd.first_name
-                ELSE a.Seller_Email
-            END AS seller_name,
-            (   
-                SELECT MAX(Bid_Price)
-                FROM Bids b
-                WHERE b.Listing_ID = a.Listing_ID
-            ) AS price
-        {base_query}
-        ORDER BY a.Listing_ID
-        LIMIT ? OFFSET ?
-    """, params + [per_page, offset])
-
-    auction_rows = cur.fetchall()
-
-    cur.execute("""SELECT *
-                   FROM Categories""")
-    category_rows = cur.fetchall()
-    conn.close()
-
+    # Convert data
     items = []
     for row in auction_rows:
         items.append({
@@ -336,7 +180,7 @@ def browse():
             "description": row["description"],
             "category": row["category"],
             "seller": row["seller_name"],
-            "price": row["price"] if row["price"] is not None else 0,
+            "price": row["price"] if row["price"] else 0,
             "image": "default-auction.jpg"
         })
 
@@ -345,60 +189,78 @@ def browse():
     has_prev = page > 1
     has_next = offset + per_page < total_items
 
-    return render_template('browse.html', items=items, categories=categories, page=page, has_prev=has_prev, has_next=has_next, role=user_role)
-
+    return render_template('browse.html', items=items, categories=categories, page=page, has_prev=has_prev, has_next=has_next, active_role= active_role)
 
 @app.route('/update_profile', methods=['POST'])
 def update_profile():
+    user_email = session['user_email']
+    user = get_user(user_email)
+    active_role = session.get('active_role')
+    if not user_email:
+        return redirect("/")
 
-    # Get User Session Email
+    password_updated = False
+    old_password = request.form.get('old_password')
+    new_password = request.form.get('new_password')
+    confirm_password = request.form.get('confirm_password')
+
+    if active_role == "Bidder":
+        first_name = request.form.get('first_name')
+        last_name = request.form.get('last_name')
+        age = request.form.get('age')
+        home_address_id = "random"
+        major = request.form.get('major')
+        try:
+            update_bidder(first_name, last_name, age, home_address_id, major, user_email)
+            print("Updated Bidder Profile")
+        except Exception as e:
+            print("Error updating Bidder Profile", e)
+
+    if new_password and new_password.strip() != "":
+        print("Password in not null")
+        if new_password != confirm_password:
+            flash("Passwords do not match")
+            print("Passwords do not match")
+            return redirect("/account")
+        if not old_password:
+            flash("Old password is required")
+            print("Old password is required")
+            return redirect("/account")
+        hashed_input = hashlib.sha256(old_password.encode()).hexdigest()
+        if user['password_hash'] != hashed_input:
+            flash("Current password does not match")
+            print("Current password does not match")
+            return redirect("/account")
+        hashed_password = hashlib.sha256(new_password.encode()).hexdigest()
+        try:
+            update_password(user_email, hashed_password)
+            password_updated = True
+            print("Updated Password")
+        except Exception as e:
+            print("Error updating Password", e)
+
+    if password_updated:
+        return redirect("/login")
+    return redirect("/account")
+
+
+
+
+@app.route('/account')
+def account():
     user_email = session['user_email']
     if not user_email:
-        return redirect(url_for('login'))
+        return redirect("/")
 
-    # Get User Input form
-    first_name = request.form.get('firstName')
-    last_name = request.form.get('lastName')
-    new_password = request.form.get('password')
-    confirm_password = request.form.get('confirm_password')
-    password_updated = False
-    try:
-        conn = db_connect()
-        cur = conn.cursor()
+    active_role = session.get('active_role')
+    if active_role == 'Helpdesk':
+        user_row = get_helpdesk(user_email)
+    elif active_role == 'Seller':
+        user_row = get_seller(user_email)
+    else:
+        user_row = get_bidder(user_email)
 
-        # Update First Name and Last Name
-        cur.execute("""
-                    UPDATE Bidders
-                    SET first_name = ?,
-                        last_name  = ?
-                    WHERE email = ?
-                    """, [first_name, last_name, user_email])
-        print("Updated Profile Name")
-        # Update Password
-        if new_password and new_password.strip() != "":
-            if new_password != confirm_password:
-                flash("Passwords do not match. Please try again.")
-            else:
-                # Hash New Password before Update in DB
-                hashed_password = hashlib.sha256(new_password.encode()).hexdigest()
-                cur.execute("""
-                    UPDATE Users
-                    SET password_hash = ?
-                    WHERE email = ?
-                """, [hashed_password, user_email])
-                print("Updated Profile Password")
-                password_updated = True
-                flash('Password has been updated!', 'success')
-
-        conn.commit()
-    except Exception as e:
-        print("Error When Updating Profile:",e )
-        flash("An error occurred while updating your profile.")
-    finally:
-        conn.close()
-    if password_updated:
-        return redirect('/login')
-    return redirect('/user_account')
+    return render_template('account.html', user_data = user_row, active_role=active_role)
 
 
 # Helper Function : Make a hierarchical tree from category database
@@ -429,7 +291,6 @@ def load_categories(rows):
             tree.append(node)
 
     return tree
-
 
 if __name__ == '__main__':
     app.run(debug=True)         # Set debug=True for development to allow auto-reloading 

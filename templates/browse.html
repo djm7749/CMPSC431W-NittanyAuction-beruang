@@ -37,17 +37,23 @@
     <!-- MAIN CONTENT -->
 
     <div class="browse-dashboard">
+
         <!-- SIDEBAR -->
         <div class="sidebar">
             <h5 class="sidebar-title">
                 Category
             </h5>
+            <!-- {{ categories }} -->
             <ul>
-                {% for category in categories %}
-                    {% include 'category_recursive.html' %}
+                {% for cat in categories %}
+                    <li>
+                        <a href="{{ url_for('browse', category=cat.category_name) }}">
+                            {{ cat.category_name }}
+                        </a>
+                    </li>
                 {% endfor %}
             </ul>
-    </div> 
+        </div> 
 
         <!-- title -->
         <div class="container mt-4 text-center">

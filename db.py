@@ -238,12 +238,21 @@ def get_browse_items(q, per_page=100, offset=0, category=None):
 
     return auction_rows, total_items
 
-def get_categories():
+def get_categories(parent=None):
     conn = db_connect()
     cur = conn.cursor()
 
-    cur.execute("SELECT * FROM Categories")
-    rows = cur.fetchall()
+    if parent:
+        cur.execute("""
+            SELECT * FROM Categories
+            WHERE parent_category = ?
+        """, (parent,))
+    else:
+        cur.execute("""
+            SELECT * FROM Categories
+            WHERE parent_category = 'Root'
+        """)
 
+    rows = cur.fetchall()
     conn.close()
     return rows

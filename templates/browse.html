@@ -55,7 +55,7 @@
                     {% include 'category_recursive.html' %}
                 {% endfor %}
             </ul>
-        </div>
+    </div> 
 
         <!-- title -->
         <div class="container mt-4 text-center">
@@ -73,10 +73,12 @@
             </form>
         </div>
 
-        <div class="container-fluid mt-4 bg-light p-4 px-4 rounded" style="height: 100vh">
+        <div class="container-fluid mt-4  p-4 px-4 rounded" style="height: 100vh">
             <!-- <h2>Current Bids</h2>
             <p>Here you can see all your current bids.</p> -->
             <!-- LIST OF AUCTIONS -->
+
+
         <div class="row justify-content-start mt-3">
             <!--No results-->
             {% if items|length == 0 %}
@@ -89,25 +91,29 @@
             {% endif %}
 
             {% for item in items %}
-            <div class="col-xl-2 col-lg-3 col-md-6 col-sm-12 mb-3 d-flex justify-content-center"> {# adjust here for card per page#}
+            <div class="col-xl-2 col-lg-3 col-md-6 col-sm-12 mb-3 d-flex justify-content-center"> 
 
-                <div class="card auction-card">
-                    <div class="card mb-4">
+                <div class="card auction-card h-100 ">
+                    <!-- <div class="card mb-4"> -->
 
                         <img
                             src="{{ url_for('static', filename='images/' + (item.image if item.image else 'default-auction.jpg')) }}"
                             class="card-img-top">
 
-                        <div class="card-body">
-                            <h5 class="card-title">{{ item.name }}</h5>
-                            <p class="card-text text-muted mb-1" style="font-size: 14px;">{{ item.description }}</p>
-                            <p class="card-text mb-1"><strong>Category:</strong> {{ item.category }}</p>
-                            <p class="card-text mb-1"><strong>Seller:</strong> {{ item.seller }}</p>
-                            <p class="card-text">Current Bid: ${{ item.price }}</p>
-                            <a href="#" class="btn btn-primary">Place Bid</a>
+                        <div class="card-body d-flex flex-column">
+                            <div class="card-title-section">
+                                <h5 class="card-title">{{ item.name }}</h5>
+                            </div>
+                            <div class="card-desc-section">
+                                <p class="card-text text-muted mb-1" style="font-size: 14px;">{{ item.description }}</p>
+                                <p class="card-text mb-1"><strong>Category:</strong> {{ item.category }}</p>
+                                <p class="card-text mb-1"><strong>Seller:</strong> {{ item.seller }}</p>
+                                <p class="card-text">Current Bid: ${{ item.price }}</p>
+                            </div>
+                            <a href="#" class="btn btn-primary mt-auto">Place Bid</a>
                         </div>
 
-                    </div>
+                    <!-- </div> -->
                 </div>
             </div>
         {% endfor %}

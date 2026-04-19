@@ -108,8 +108,8 @@ def init_db():
 
     cursor.execute("""
         CREATE TABLE Address (
-            address_id INTEGER PRIMARY KEY,
-            zipcode TEXT,
+            address_id TEXT PRIMARY KEY,
+            zipcode INTEGER,
             street_num TEXT,
             street_name TEXT,
             FOREIGN KEY (zipcode) REFERENCES Zipcode_Info(zipcode)
@@ -144,12 +144,12 @@ def init_db():
             transaction_id INTEGER PRIMARY KEY,
             seller_email TEXT,
             listing_id INTEGER,
-            buyer_email TEXT,
+            bidder_email TEXT,
             date TEXT,
             payment REAL,
             FOREIGN KEY (seller_email, listing_id)
                 REFERENCES Auction_Listings(seller_email, listing_id),
-            FOREIGN KEY (buyer_email) REFERENCES Bidders(email)
+            FOREIGN KEY (bidder_email) REFERENCES Bidders(email)
         );
     """)
 
@@ -344,17 +344,17 @@ def init_db():
 
     # Populate Transactions
     try:
-        cards_df = pd.read_csv(DATASETPATH + "Credit_Cards.csv")
+        cards_df = pd.read_csv(DATASETPATH + "Transactions.csv")
 
         for _, row in cards_df.iterrows():
             cursor.execute("""
-                        INSERT INTO Credit_Cards (credit_card_num, card_type, expire_month, expire_year, security_code, owner_email)
+                        INSERT INTO Transactions (transaction_id, seller_email, listing_id, bidder_email, date, payment)
                         VALUES (?, ?, ?, ?, ?, ?)
-                        """, (row["credit_card_num"], row["card_type"], row["expire_month"], row["expire_year"], row["security_code"], row["Owner_email"]))
+                        """, (row["Transaction_ID"], row["Seller_Email"], row["Listing_ID"], row["Bidder_Email"], row["Date"], row["Payment"]))
 
-        print("Credit_Cards loaded.")
+        print("Transactions loaded.")
     except Exception as e:
-        print("Error loading Credit_Cards:", e)
+        print("Error loading Transactions:", e)
 
     
     # Populate Ratings

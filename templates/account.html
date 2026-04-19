@@ -1,0 +1,128 @@
+{% extends 'layout.html' %}
+
+{% block title %} User Account {% endblock %}
+
+{% block content %}
+
+    <div class="container mt-4">
+
+    <div class="bg-light p-4 rounded mb-3">
+        <h2>Account Settings</h2>
+        <p class="text-muted mb-0">Edit your account details and active roles</p>
+    </div>
+
+    <div class="bg-light p-4 rounded shadow-sm mb-4">
+
+        <h5>Active Role</h5>
+
+        <form action="/switch_role" method="POST" class="mt-2">
+            <div class="form-group">
+                <label for="active_roles">Choose a Role:</label>
+                <select name="active_roles" id="active_roles">
+                  <option value="Bidders">Bidders</option>
+                  <option value="Sellers">Sellers</option>
+                  <option value="Helpdesk">Helpdesk</option>
+                </select>
+            </div>
+        </form>
+
+        <small class="text-muted">
+            Switching role changes what information you can edit below.
+        </small>
+
+    </div>
+
+    <div class="bg-light p-4 rounded">
+        <h4>Profile Information</h4>
+        <form action="/update_profile" method="POST">
+            <div class="form-group">
+                <label for = "email"> User ID (Email Address)</label>
+                <input type="email" class="form-control" id="email" name="email" value="{{ user_data['email']}}" readonly>
+                <small class="form-text text-danger"> Email changes require a formal request to the HelpDesk. </small>
+            </div>
+
+            {% if active_role == "Seller" %}
+            <div class = "form-row" >
+                <div class="form-group">
+                    <label for = "bank_routing_number" > Bank Routing Number</label>
+                    <input type="text" class="form-control" id="bank_routing_number" name="bank_routing_number" value="{{ user_data['bank_routing_number']}}" readonly>
+                </div>
+                <div class="form-group">
+                    <label for = "bank_account_number" > Bank Account Number</label>
+                    <input type="text" class="form-control" id="bank_account_number" name="bank_account_number" value="{{ user_data['bank_account_number']}}" readonly>
+                </div>
+            </div>
+            {% elif active_role == "Bidder" %}
+            <div class="form-row">
+                <div class="form-group col-md-6">
+                    <label for="firstName">First Name</label>
+                    <input type="text" class="form-control" id="firstName" name="firstName"
+                           value="{{ user_data['first_name'] }}" required>
+                </div>
+                <div class="form-group col-md-6">
+                    <label for="lastName">Last Name</label>
+                    <input type="text" class="form-control" id="lastName" name="lastName"
+                           value="{{ user_data['last_name'] }}" required>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group col-md-6">
+                    <label for="age">Age</label>
+                    <input type="text" class="form-control" id="age" name="age"
+                           value="{{ user_data['age'] }}" required>
+                </div>
+                <div class="form-group col-md-6">
+                    <label for="major">Major</label>
+                    <input type="text" class="form-control" id="major" name="major"
+                           value="{{ user_data['major'] }}" required>
+                </div>
+            </div>
+            {% endif %}
+
+        <hr>
+        <h5> Change Password</h5>
+
+        {% with messages = get_flashed_messages() %}
+          {% if messages %}
+            {% for message in messages %}
+              <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                  <span aria-hidden="true">&times;</span>
+                </button>
+              </div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+
+        <!-- Form for old Password -->
+            <div class="form-group">
+                <label for="old_password">Current Password</label>
+                <input type="password" class="form-control"  id="old_password" name="old_password" placeholder="">
+                <small class="form-text text-muted"> You must enter your current password to make changes. </small>
+            </div>
+
+            <div class="form-row">
+
+                <!-- Form for new Password -->
+                <div class="form-group col-md-6">
+                    <label for="new_password">New Password</label>
+                    <input type="password" class="form-control" id="new_password" name="new_password" placeholder="">
+                    <small class="form-text text-muted"> Leave blank to keep current password. </small>
+                </div>
+                <div class="form-group col-md-6">
+                    <label for="confirm_password">Confirm New Password</label>
+                    <input type="password" class="form-control" id="confirm_password" name="confirm_password" placeholder="">
+                </div>
+            </div>
+
+
+
+
+            <button type="submit" class="btn btn-success"> Save Changes </button>
+            <a href="/dashboard" class="btn btn-secondary"> Cancel </a>
+        </form>
+    </div>
+</div>
+
+{% endblock %}

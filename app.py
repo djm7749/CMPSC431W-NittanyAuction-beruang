@@ -173,6 +173,13 @@ def browse():
 
     # handle sidebar categories
     selected_category = request.args.get('category', '').strip()
+    # category_path = get_category_path(selected_category) if selected_category else []
+    category_path = ["All Categories"]
+    if selected_category=="All Categories":
+        selected_category = None
+    else:
+        category_path += get_category_path(selected_category)
+
 
     # if category:
     #     categories = get_categories(category)
@@ -199,7 +206,7 @@ def browse():
     has_prev = page > 1
     has_next = offset + per_page < total_items
 
-    return render_template('browse.html', items=items, categories=categories, page=page, has_prev=has_prev, has_next=has_next, active_role= active_role)
+    return render_template('browse.html', items=items, categories=categories, category_path=category_path, page=page, has_prev=has_prev, has_next=has_next, active_role= active_role)
 
 @app.route('/update_profile', methods=['POST'])
 def update_profile():

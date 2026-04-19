@@ -256,3 +256,25 @@ def get_categories(parent=None):
     rows = cur.fetchall()
     conn.close()
     return rows
+
+def get_category_path(category):
+    conn = db_connect()
+    cur = conn.cursor()
+
+    # store path in list from root to children
+    path = []
+
+    while category and category != "Root":
+        path.insert(0, category)   # add to front
+
+        cur.execute("""
+            SELECT parent_category
+            FROM Categories
+            WHERE category_name = ?
+        """, (category,))
+
+        row = cur.fetchone()
+        category = row["parent_category"] if row else None
+
+    conn.close()
+    return path

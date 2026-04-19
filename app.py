@@ -169,7 +169,9 @@ def browse():
     offset = (page - 1) * per_page
     q = request.args.get('q','').strip()
 
-    auction_rows, total_items = get_browse_items(q, per_page, offset)
+
+    category = request.args.get('category', '').strip()
+    auction_rows, total_items = get_browse_items(q, per_page, offset, category)
     category_rows = get_categories()
 
     # Convert data

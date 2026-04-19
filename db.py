@@ -165,20 +165,25 @@ def get_auction_listing(email):
     return rows
 
 
-def get_browse_items(q, per_page=100, offset=0):
+def get_browse_items(q, per_page=100, offset=0, category=None):
     conn = db_connect()
     cur = conn.cursor()
     params = []
 
+    # base query for both search bar and category sidebar; join auction_listings with Local_Vendors and Bidders to get seller names; filter by active listings only
+    base_query = """
+    FROM Auction_Listings a
+    LEFT JOIN Local_Vendors lv
+        ON a.Seller_Email = lv.Email
+    LEFT JOIN Bidders bd
+        ON a.Seller_Email = bd.Email
+    WHERE a.status = 1
+    """
+    
+    # filter by using SEARCH BAR; search across multiple fields in both auction_listings and seller tables
     if q:
         keyword = f"%{q}%"
-        base_query = """
-        FROM Auction_Listings a
-        LEFT JOIN Local_Vendors lv
-            ON a.Seller_Email = lv.Email
-        LEFT JOIN Bidders bd
-            ON a.Seller_Email = bd.Email
-        WHERE a.status = 1
+        base_query += """
             AND (
                 a.Product_Name LIKE ?
                 OR a.Product_Description LIKE ?
@@ -191,15 +196,11 @@ def get_browse_items(q, per_page=100, offset=0):
         """
         params.extend([keyword]*7)
 
-    else:
-        base_query = """
-        FROM Auction_Listings a
-        LEFT JOIN Local_Vendors lv
-            ON a.Seller_Email = lv.Email
-        LEFT JOIN Bidders bd
-            ON a.Seller_Email = bd.Email
-        WHERE a.status = 1
-        """
+
+    # filter by using CATEGORY SIDEBAR if sidebar category is selected
+    if category:
+        base_query += """ AND a.Category = ? """
+        params.append(category)
 
     # Count query
     cur.execute(f"""

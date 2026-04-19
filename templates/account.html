@@ -11,26 +11,42 @@
         <p class="text-muted mb-0">Edit your account details and active roles</p>
     </div>
 
-    <div class="bg-light p-4 rounded shadow-sm mb-4">
+    {% if roles|length > 1 %}
+        <div class="bg-light p-4 rounded shadow-sm mb-4">
 
-        <h5>Active Role</h5>
+            <h5>Active Role</h5>
 
-        <form action="/switch_role" method="POST" class="mt-2">
-            <div class="form-group">
-                <label for="active_roles">Choose a Role:</label>
-                <select name="active_roles" id="active_roles">
-                  <option value="Bidders">Bidders</option>
-                  <option value="Sellers">Sellers</option>
-                  <option value="Helpdesk">Helpdesk</option>
-                </select>
-            </div>
-        </form>
+            <form action="/switch_role" method="POST" class="mt-2">
+                <div class="d-flex align-items-center gap-2">
+                    <label for="active_roles" class = "mb-0">Choose a Role:</label>
+                    <select name="active_role" id="active_roles" class="form-select w-auto">
+                        {% if "Bidder" in roles %}
+                            <option value="Bidder" {% if session['active_role']=='Bidder' %}selected{% endif %}>Bidder</option>
+                        {% endif %}
 
-        <small class="text-muted">
-            Switching role changes what information you can edit below.
-        </small>
+                        {% if "Seller" in roles %}
+                            <option value="Seller" {% if session['active_role']=='Seller' %}selected{% endif %}>Seller</option>
+                        {% endif %}
 
-    </div>
+                        {% if "Helpdesk" in roles %}
+                            <option value="Helpdesk" {% if session['active_role']=='Helpdesk' %}selected{% endif %}>Helpdesk</option>
+                        {% endif %}
+                    </select>
+                </div>
+                <div>
+                    <br>
+                    <button type="submit" class="btn btn-primary">Switch Role</button>
+                </div>
+            </form>
+
+
+
+            <small class="text-muted d-block mt-2" >
+                Switching role changes your current active role and your permissions
+            </small>
+
+        </div>
+    {% endif %}
 
     <div class="bg-light p-4 rounded">
         <h4>Profile Information</h4>
@@ -43,11 +59,11 @@
 
             {% if active_role == "Seller" %}
             <div class = "form-row" >
-                <div class="form-group">
+                <div class="form-group col-md-6">
                     <label for = "bank_routing_number" > Bank Routing Number</label>
                     <input type="text" class="form-control" id="bank_routing_number" name="bank_routing_number" value="{{ user_data['bank_routing_number']}}" readonly>
                 </div>
-                <div class="form-group">
+                <div class="form-group col-md-6">
                     <label for = "bank_account_number" > Bank Account Number</label>
                     <input type="text" class="form-control" id="bank_account_number" name="bank_account_number" value="{{ user_data['bank_account_number']}}" readonly>
                 </div>
@@ -78,7 +94,6 @@
                 </div>
             </div>
             {% endif %}
-
         <hr>
         <h5> Change Password</h5>
 

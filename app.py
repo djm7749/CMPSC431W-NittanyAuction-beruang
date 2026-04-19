@@ -271,6 +271,8 @@ def account():
     if not user_email:
         return redirect("/")
 
+    roles = get_user_roles(session['user_email'])
+    print(roles)
     active_role = session.get('active_role')
     if active_role == 'Helpdesk':
         user_row = get_helpdesk(user_email)
@@ -279,7 +281,25 @@ def account():
     else:
         user_row = get_bidder(user_email)
 
-    return render_template('account.html', user_data = user_row, active_role=active_role)
+    return render_template('account.html', user_data = user_row, active_role=active_role, roles = roles)
+
+@app.route('/switch_role', methods=['POST'])
+def switch_role():
+
+    email = session.get('user_email')
+    if not email:
+        return redirect(url_for('login'))
+
+    selected_role = request.form.get('active_role')
+
+    session['active_role'] = selected_role
+
+    if session['active_role'] == "Bidder":
+        return redirect("/bidder_dashboard")
+    elif session['active_role'] == "Seller":
+        return redirect("/seller_dashboard")
+    else:
+        return redirect("/helpdesk_dashboard")
 
 
 # Helper Function : Make a hierarchical tree from category database

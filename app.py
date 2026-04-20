@@ -186,6 +186,9 @@ def seller_listing_detail(listing_id):
 
     # retrieve auction listing by id
     listing = get_auction_listing_by_id(seller_email,listing_id)
+    category_rows = get_categories()
+    category_tree = load_categories(category_rows)
+    category_options = flatten_categories_for_select(category_tree)
 
     if not listing:
         return "Listing not found.", 404
@@ -196,10 +199,7 @@ def seller_listing_detail(listing_id):
     edit_blocked = False
     edit_message = None
 
-    # status meanings:
-    # 0 = inactive
-    # 1 = active
-    # 2 = sold
+    # status meanings:  0 = inactive, 1 = active, 2 = sold
 
     if listing["Status"] == 2:
         edit_blocked = True
@@ -209,7 +209,7 @@ def seller_listing_detail(listing_id):
         edit_message = "This active listing cannot be edited because bidding has already started."
 
     return render_template(
-        'listing_details.html',listing=listing,bid_count=bid_count,edit_blocked=edit_blocked,edit_message=edit_message,active_role=active_role)
+        'listing_details.html',listing=listing,bid_count=bid_count,edit_blocked=edit_blocked,edit_message=edit_message,active_role=active_role,categories=category_options)
 
 @app.route('/browse')
 def browse():

@@ -305,3 +305,31 @@ def get_bid_count(seller_email,listing_id):
     conn.close()
 
     return result["bid_count"] if result else 0
+
+def update_auction_listing(seller_email, listing_id, product_name, product_description,
+                           category, reserve_price, quantity, max_bids):
+    conn = db_connect()
+    cur = conn.cursor()
+
+    cur.execute("""
+        UPDATE Auction_Listings
+        SET Product_Name = ?,
+            Product_Description = ?,
+            Category = ?,
+            Reserve_Price = ?,
+            Quantity = ?,
+            Max_bids = ?
+        WHERE Seller_Email = ? AND Listing_ID = ?
+    """, (
+        product_name,
+        product_description,
+        category,
+        reserve_price,
+        quantity,
+        max_bids,
+        seller_email,
+        listing_id
+    ))
+
+    conn.commit()
+    conn.close()

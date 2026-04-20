@@ -141,9 +141,10 @@ def seller_dashboard():
 
     for row in seller_rows:
         items.append({
-            "name": row[0],  # Product_Name
-            "price": row[1],  # Reserve_Price (or current bid if you have it)
-            "status" : row[2],
+            "listing_id": row[0], # Listing ID
+            "name": row[1],  # Product_Name
+            "price": row[2],  # Reserve_Price (or current bid if you have it)
+            "status" : row[3],
             "image": "default-auction.jpg"  # keep frontend unchanged
         })
 
@@ -177,6 +178,38 @@ def create_auction():
         return redirect(url_for('seller_dashboard'))
 
     return render_template('create-auction.html',active_role=active_role,categories=category_options)
+
+@app.route('/seller_dashboard/listing/<int:listing_id>')
+def seller_listing_detail(listing_id):
+    seller_email = session.get('user_email')
+    active_role = session.get('active_role')
+
+    # retrieve auction listing by id
+    listing = get_auction_listing_by_id(seller_email,listing_id)
+
+    if not listing:
+        return "Listing not found.", 404
+
+    # count bids already placed on that auction listing
+    bid_count = get_bid_count(seller_email,listing_id)
+
+    edit_blocked = False
+    edit_message = None
+
+    # status meanings:
+    # 0 = inactive
+    # 1 = active
+    # 2 = sold
+
+    if listing["Status"] == 2:
+        edit_blocked = True
+        edit_message = "This listing has been sold and can no longer be edited."
+    elif listing["Status"] == 1 and bid_count > 0:
+        edit_blocked = True
+        edit_message = "This active listing cannot be edited because bidding has already started."
+
+    return render_template(
+        'listing_details.html',listing=listing,bid_count=bid_count,edit_blocked=edit_blocked,edit_message=edit_message,active_role=active_role)
 
 @app.route('/browse')
 def browse():

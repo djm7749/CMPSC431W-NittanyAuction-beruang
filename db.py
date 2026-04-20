@@ -164,7 +164,7 @@ def get_auction_listing(email, status_filter):
         filter_query = ""
 
     cur.execute(f"""
-                SELECT Product_Name, Reserve_Price,Status
+                SELECT Listing_ID,Product_Name, Reserve_Price,Status
                 FROM Auction_Listings
                 WHERE Seller_Email = ? {filter_query}
                 """, (email,))
@@ -273,3 +273,35 @@ def create_auction_listing(seller_email,auction_title,name,description,category,
 
     conn.commit()
     conn.close()
+
+def get_auction_listing_by_id(seller_email,listing_id):
+    conn = db_connect()
+    cur = conn.cursor()
+
+    cur.execute("""
+                SELECT *
+                FROM Auction_Listings
+                WHERE Seller_Email = ?
+                  AND Listing_ID = ?
+                """, (seller_email, listing_id))
+
+    listing = cur.fetchone()
+    conn.close()
+
+    return listing
+
+def get_bid_count(seller_email,listing_id):
+    conn = db_connect()
+    cur = conn.cursor()
+
+    cur.execute("""
+                SELECT COUNT(*) AS bid_count
+                FROM Bids
+                WHERE Seller_Email = ?
+                  AND Listing_ID = ?
+                """, (seller_email, listing_id))
+
+    result = cur.fetchone()
+    conn.close()
+
+    return result["bid_count"] if result else 0

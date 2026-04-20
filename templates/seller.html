@@ -57,7 +57,7 @@
                                 <span class="badge badge-danger">Sold</span>
                             {% endif %}
                         </p>
-                        <a href="#" class="btn btn-primary">View/Edit auction</a>
+                        <a href="{{ url_for('seller_listing_detail', listing_id=item.listing_id) }}" class="btn btn-primary">View/Edit auction</a>
                     </div>
 
                 </div>

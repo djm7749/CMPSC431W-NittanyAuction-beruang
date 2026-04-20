@@ -1,0 +1,48 @@
+{% extends 'layout.html' %}
+
+{% block title %}Listing Details{% endblock %}
+
+{% block content %}
+<div class="container mt-4 bg-light p-4 rounded">
+    <h2>{{ listing['Product_Name'] }}</h2>
+
+    <p><strong>Description:</strong> {{ listing['Product_Description'] }}</p>
+    <p><strong>Category:</strong> {{ listing['Category'] }}</p>
+    <p><strong>Reserve Price:</strong> {{ listing['Reserve_Price'] }}</p>
+    <p><strong>Quantity:</strong> {{ listing['Quantity'] }}</p>
+    <p><strong>Max Bids:</strong> {{ listing['Max_bids'] }}</p>
+    <p><strong>Status:</strong>
+        {% if listing['Status'] == 1 %}
+            <span class="badge badge-success">Active</span>
+        {% elif listing['Status'] == 0 %}
+            <span class="badge badge-secondary">Inactive</span>
+        {% elif listing['Status'] == 2 %}
+            <span class="badge badge-danger">Sold</span>
+        {% endif %}
+    </p>
+    <p><strong>Bids Placed:</strong> {{ bid_count }}</p>
+
+    {% if edit_blocked %}
+        <div class="alert alert-warning">
+            {{ edit_message }}
+        </div>
+        <button class="btn btn-primary" disabled>Edit Listing</button>
+    {% else %}
+        <a href="#" class="btn btn-primary">
+            Edit Listing
+        </a>
+    {% endif %}
+
+    {% if listing['Status'] == 1 %}
+        <hr>
+        <h4>Take Listing Off Market</h4>
+        <form method="POST" action="{#  #}">
+            <div class="form-group">
+                <label for="removal_reason">Reason for removal</label>
+                <textarea name="removal_reason" id="removal_reason" class="form-control" rows="3" required></textarea>
+            </div>
+            <button type="submit" class="btn btn-secondary">Mark Inactive</button>
+        </form>
+    {% endif %}
+</div>
+{% endblock %}

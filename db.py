@@ -150,14 +150,23 @@ def get_active_auctions(limit=8):
     conn.close()
     return rows
 
-def get_auction_listing(email):
+def get_auction_listing(email, status_filter):
     conn = db_connect()
     cur = conn.cursor()
 
-    cur.execute("""
-                SELECT Product_Name, Reserve_Price
+    if status_filter == "active":
+        filter_query = "AND Status = 1"
+    elif status_filter == "inactive":
+        filter_query = "AND Status = 0"
+    elif status_filter == "sold":
+        filter_query = "AND Status = 2"
+    else:
+        filter_query = ""
+
+    cur.execute(f"""
+                SELECT Listing_ID,Product_Name, Reserve_Price,Status
                 FROM Auction_Listings
-                WHERE Seller_Email = ?
+                WHERE Seller_Email = ? {filter_query}
                 """, (email,))
 
     rows = cur.fetchall()
@@ -238,43 +247,89 @@ def get_browse_items(q, per_page=100, offset=0, category=None):
 
     return auction_rows, total_items
 
-def get_categories(parent=None):
+def get_categories():
     conn = db_connect()
     cur = conn.cursor()
 
-    if parent:
-        cur.execute("""
-            SELECT * FROM Categories
-            WHERE parent_category = ?
-        """, (parent,))
-    else:
-        cur.execute("""
-            SELECT * FROM Categories
-            WHERE parent_category = 'Root'
-        """)
-
+    cur.execute("SELECT * FROM Categories")
     rows = cur.fetchall()
+
     conn.close()
     return rows
 
-def get_category_path(category):
+def create_auction_listing(seller_email,auction_title,name,description,category,reserve_price,max_bids,quantity):
     conn = db_connect()
     cur = conn.cursor()
 
-    # store path in list from root to children
-    path = []
+    cur.execute("""
+                INSERT INTO Auction_Listings
+                (Seller_Email,Auction_Title,Product_Name,Product_Description,Category,
+                 Reserve_Price,Max_bids,Quantity,Status)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?,?)
+                """, (
+                    seller_email,auction_title,name,description,category,
+                    reserve_price,max_bids,quantity,1
+                ))
 
-    while category and category != "Root":
-        path.insert(0, category)   # add to front
-
-        cur.execute("""
-            SELECT parent_category
-            FROM Categories
-            WHERE category_name = ?
-        """, (category,))
-
-        row = cur.fetchone()
-        category = row["parent_category"] if row else None
-
+    conn.commit()
     conn.close()
-    return path
+
+def get_auction_listing_by_id(seller_email,listing_id):
+    conn = db_connect()
+    cur = conn.cursor()
+
+    cur.execute("""
+                SELECT *
+                FROM Auction_Listings
+                WHERE Seller_Email = ?
+                  AND Listing_ID = ?
+                """, (seller_email, listing_id))
+
+    listing = cur.fetchone()
+    conn.close()
+
+    return listing
+
+def get_bid_count(seller_email,listing_id):
+    conn = db_connect()
+    cur = conn.cursor()
+
+    cur.execute("""
+                SELECT COUNT(*) AS bid_count
+                FROM Bids
+                WHERE Seller_Email = ?
+                  AND Listing_ID = ?
+                """, (seller_email, listing_id))
+
+    result = cur.fetchone()
+    conn.close()
+
+    return result["bid_count"] if result else 0
+
+def update_auction_listing(seller_email, listing_id, product_name, product_description,
+                           category, reserve_price, quantity, max_bids):
+    conn = db_connect()
+    cur = conn.cursor()
+
+    cur.execute("""
+        UPDATE Auction_Listings
+        SET Product_Name = ?,
+            Product_Description = ?,
+            Category = ?,
+            Reserve_Price = ?,
+            Quantity = ?,
+            Max_bids = ?
+        WHERE Seller_Email = ? AND Listing_ID = ?
+    """, (
+        product_name,
+        product_description,
+        category,
+        reserve_price,
+        quantity,
+        max_bids,
+        seller_email,
+        listing_id
+    ))
+
+    conn.commit()
+    conn.close()

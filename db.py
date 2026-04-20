@@ -247,13 +247,22 @@ def get_browse_items(q, per_page=100, offset=0, category=None):
 
     return auction_rows, total_items
 
-def get_categories():
+def get_categories(parent=None):
     conn = db_connect()
     cur = conn.cursor()
 
-    cur.execute("SELECT * FROM Categories")
-    rows = cur.fetchall()
+    if parent:
+        cur.execute("""
+            SELECT * FROM Categories
+            WHERE parent_category = ?
+        """, (parent,))
+    else:
+        cur.execute("""
+            SELECT * FROM Categories
+            WHERE parent_category = 'Root'
+        """)
 
+    rows = cur.fetchall()
     conn.close()
     return rows
 
@@ -333,3 +342,25 @@ def update_auction_listing(seller_email, listing_id, product_name, product_descr
 
     conn.commit()
     conn.close()
+
+def get_category_path(category):
+    conn = db_connect()
+    cur = conn.cursor()
+
+    # store path in list from root to children
+    path = []
+
+    while category and category != "Root":
+        path.insert(0, category)   # add to front
+
+        cur.execute("""
+            SELECT parent_category
+            FROM Categories
+            WHERE category_name = ?
+        """, (category,))
+
+        row = cur.fetchone()
+        category = row["parent_category"] if row else None
+
+    conn.close()
+    return path

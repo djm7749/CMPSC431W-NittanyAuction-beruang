@@ -1,3 +1,5 @@
+from unicodedata import category
+
 from idlelib.debugobj_r import remote_object_tree_item
 
 from flask import Flask, render_template, request, session, redirect, url_for, flash
@@ -221,10 +223,25 @@ def browse():
     offset = (page - 1) * per_page
     q = request.args.get('q','').strip()
 
+    # handle sidebar categories
+    selected_category = request.args.get('category', '').strip()
+    # category_path = get_category_path(selected_category) if selected_category else []
+    category_path = ["All Categories"]
+    if selected_category=="All Categories":
+        selected_category = None
+    else:
+        category_path += get_category_path(selected_category)
 
-    category = request.args.get('category', '').strip()
-    auction_rows, total_items = get_browse_items(q, per_page, offset, category)
-    category_rows = get_categories()
+
+    # if category:
+    #     categories = get_categories(category)
+    # else:
+    #     categories = get_categories(category=None)
+
+    categories = get_categories(selected_category if selected_category else None)
+
+    auction_rows, total_items = get_browse_items(q, per_page, offset, selected_category)
+    
 
     # Convert data
     items = []
@@ -238,12 +255,10 @@ def browse():
             "image": "default-auction.jpg"
         })
 
-    categories = load_categories(category_rows)
-
     has_prev = page > 1
     has_next = offset + per_page < total_items
 
-    return render_template('browse.html', items=items, categories=categories, page=page, has_prev=has_prev, has_next=has_next, active_role= active_role)
+    return render_template('browse.html', items=items, categories=categories, category_path=category_path, page=page, has_prev=has_prev, has_next=has_next, active_role= active_role)
 
 @app.route('/update_profile', methods=['POST'])
 def update_profile():
@@ -306,6 +321,8 @@ def account():
     if not user_email:
         return redirect("/")
 
+    roles = get_user_roles(session['user_email'])
+    print(roles)
     active_role = session.get('active_role')
     if active_role == 'Helpdesk':
         user_row = get_helpdesk(user_email)
@@ -314,7 +331,25 @@ def account():
     else:
         user_row = get_bidder(user_email)
 
-    return render_template('account.html', user_data = user_row, active_role=active_role)
+    return render_template('account.html', user_data = user_row, active_role=active_role, roles = roles)
+
+@app.route('/switch_role', methods=['POST'])
+def switch_role():
+
+    email = session.get('user_email')
+    if not email:
+        return redirect(url_for('login'))
+
+    selected_role = request.form.get('active_role')
+
+    session['active_role'] = selected_role
+
+    if session['active_role'] == "Bidder":
+        return redirect("/bidder_dashboard")
+    elif session['active_role'] == "Seller":
+        return redirect("/seller_dashboard")
+    else:
+        return redirect("/helpdesk_dashboard")
 
 
 # Helper Function : Make a hierarchical tree from category database

@@ -1,3 +1,5 @@
+from unicodedata import category
+
 from idlelib.debugobj_r import remote_object_tree_item
 
 from flask import Flask, render_template, request, session, redirect, url_for, flash
@@ -186,10 +188,25 @@ def browse():
     offset = (page - 1) * per_page
     q = request.args.get('q','').strip()
 
+    # handle sidebar categories
+    selected_category = request.args.get('category', '').strip()
+    # category_path = get_category_path(selected_category) if selected_category else []
+    category_path = ["All Categories"]
+    if selected_category=="All Categories":
+        selected_category = None
+    else:
+        category_path += get_category_path(selected_category)
 
-    category = request.args.get('category', '').strip()
-    auction_rows, total_items = get_browse_items(q, per_page, offset, category)
-    category_rows = get_categories()
+
+    # if category:
+    #     categories = get_categories(category)
+    # else:
+    #     categories = get_categories(category=None)
+
+    categories = get_categories(selected_category if selected_category else None)
+
+    auction_rows, total_items = get_browse_items(q, per_page, offset, selected_category)
+    
 
     # Convert data
     items = []
@@ -203,12 +220,10 @@ def browse():
             "image": "default-auction.jpg"
         })
 
-    categories = load_categories(category_rows)
-
     has_prev = page > 1
     has_next = offset + per_page < total_items
 
-    return render_template('browse.html', items=items, categories=categories, page=page, has_prev=has_prev, has_next=has_next, active_role= active_role)
+    return render_template('browse.html', items=items, categories=categories, category_path=category_path, page=page, has_prev=has_prev, has_next=has_next, active_role= active_role)
 
 @app.route('/update_profile', methods=['POST'])
 def update_profile():

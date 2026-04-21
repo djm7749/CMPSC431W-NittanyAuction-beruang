@@ -258,9 +258,13 @@ def seller_listing_detail(listing_id):
     elif listing["Status"] == 1 and bid_count > 0:
         edit_blocked = True
         edit_message = "This active listing cannot be edited because bidding has already started."
+    elif listing["Status"] == 0:
+        edit_blocked = True
+        edit_message = "This listing is inactive and can no longer be edited."
+        removal_info = get_listing_removal(seller_email,listing_id)
 
     return render_template(
-        'listing_details.html',listing=listing,bid_count=bid_count,reserve_price_value=reserve_price_value,edit_blocked=edit_blocked,edit_message=edit_message,active_role=active_role,categories=category_options)
+        'listing_details.html',listing=listing,bid_count=bid_count,reserve_price_value=reserve_price_value,edit_blocked=edit_blocked,edit_message=edit_message,active_role=active_role,categories=category_options,removal_info=removal_info)
 @app.route('/seller_dashboard/listing/<int:listing_id>/update', methods=['POST'])
 def update_listing(listing_id):
     seller_email = session.get('user_email')
@@ -277,6 +281,17 @@ def update_listing(listing_id):
         category,reserve_price,quantity,max_bids)
 
     flash("Listing updated successfully.")
+    return redirect(url_for('seller_dashboard'))
+
+@app.route('/seller_dashboard/listing/<int:listing_id>/remove', methods=['POST'])
+def remove_listing(listing_id):
+    seller_email = session.get('user_email')
+
+    removal_reason = request.form.get('removal_reason', '').strip()
+
+    mark_listing_unactive(seller_email,listing_id,removal_reason)
+
+    flash("Listing marked inactive.")
     return redirect(url_for('seller_dashboard'))
 
 @app.route('/browse')

@@ -23,6 +23,11 @@
     </p>
     <p><strong>Bids Placed:</strong> {{ bid_count }}</p>
 
+    {% if removal_info %}
+        <p><strong>Remaining Bids:</strong> {{ removal_info['Remaining_Bids'] }}</p>
+        <p><strong>Removal Reason:</strong> {{ removal_info['Removal_Reason'] }}</p>
+    {% endif %}
+
     <form method="POST" action="{{ url_for('update_listing', listing_id=listing['Listing_ID']) }}">
     <div class="row">
 
@@ -108,12 +113,12 @@
     {% if listing['Status'] == 1 %}
         <hr>
         <h4>Take Listing Off Market</h4>
-        <form method="POST" action="{#  #}">
+        <form method="POST" action="{{url_for('remove_listing', listing_id=listing['Listing_ID'])}}">
             <div class="form-group">
                 <label for="removal_reason">Reason for removal</label>
                 <textarea name="removal_reason" id="removal_reason" class="form-control" rows="3" required></textarea>
             </div>
-            <button type="submit" class="btn btn-secondary">Mark Inactive</button>
+            <button type="submit" class="btn btn-danger">Remove</button>
         </form>
     {% endif %}
 </div>

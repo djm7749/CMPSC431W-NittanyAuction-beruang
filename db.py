@@ -310,10 +310,10 @@ def get_bid_count(seller_email,listing_id):
                   AND Listing_ID = ?
                 """, (seller_email, listing_id))
 
-    result = cur.fetchone()
-    conn.close()
+    # result = cur.fetchone()
+    # conn.close()
 
-    return result["bid_count"] if result else 0
+    return cur.fetchone()["bid_count"]
 
 def update_auction_listing(seller_email, listing_id, product_name, product_description,
                            category, reserve_price, quantity, max_bids):
@@ -364,3 +364,46 @@ def get_category_path(category):
 
     conn.close()
     return path
+
+def mark_listing_unactive(seller_email,listing_id, removal_reason):
+    conn = db_connect()
+    cur = conn.cursor()
+
+    listing = get_auction_listing_by_id(seller_email, listing_id)
+    bid_count = get_bid_count(seller_email, listing_id)
+
+    # compute remaining bids
+    remaining_bids = max(0, listing["Max_bids"] - bid_count)
+
+    # insert into audit table
+    cur.execute("""
+                INSERT INTO Listings_Removal
+                    (Seller_Email, Listing_ID, Removal_Reason, Remaining_Bids)
+                VALUES (?, ?, ?, ?)
+                """, (seller_email, listing_id, removal_reason, remaining_bids))
+
+    # update status → inactive
+    cur.execute("""
+                UPDATE Auction_Listings
+                SET Status = 0
+                WHERE Seller_Email = ?
+                  AND Listing_ID = ?
+                """, (seller_email, listing_id))
+
+    conn.commit()
+    conn.close()
+
+def get_listing_removal(seller_email,listing_id):
+    conn = db_connect()
+    cur = conn.cursor()
+
+    cur.execute("""
+                SELECT Removal_Reason, Remaining_Bids
+                FROM Listings_Removal
+                WHERE Seller_Email = ?
+                  AND Listing_ID = ?
+                """, (seller_email, listing_id))
+
+    row = cur.fetchone()
+    conn.close()
+    return row

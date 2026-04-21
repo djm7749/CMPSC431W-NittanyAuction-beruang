@@ -109,19 +109,36 @@ def signup():
 
     return render_template('signup.html')
 
-from db import get_active_auctions
+from db import get_bidder_auctions
 
 @app.route('/bidder_dashboard')
 def bidder_dashboard():
 
     active_role = session.get('active_role')
-    auction_rows = get_active_auctions()
+    bidder = session['user_email']
+    auction_rows = get_bidder_auctions(bidder)
 
     items = []
-    for row in auction_rows:
+
+    for auction in auction_rows:
+        # status_map = {
+        #     1: "Active",
+        #     0: "Inactive",
+        #     2: "Sold"
+        # }
+
+        print(auction.keys())
+
+        highest_bidder = auction["Bidder_Email"] if auction["Bidder_Email"] else "No bids yet"
+
+        if highest_bidder == bidder:
+            highest_bidder = "You"
+
         items.append({
-            "name": row["name"],
-            "price": row["price"] if row["price"] else 0,
+            "name": auction["name"],
+            "price": auction["Bid_Price"] if auction["Bid_Price"] else 0,
+            "highest_bidder": highest_bidder,
+            # "status": status_map.get(auction["status"], "Unknown"),
             "image": "default-auction.jpg"
         })
 
@@ -474,6 +491,11 @@ def view_listing(listing_id):
         if bid_count >= max_bids:
             flash("Maximum number of bids reached for this listing")
             return render_template('view-listing.html', listing=listing, bids=get_bids_history(listing_id), highest_bid=highest_bid, active_role=session.get('active_role'), highest_bidder=highest_bidder)
+
+        if session.get('active_role') != "Bidder":
+            flash("Only bidders can place bids")
+            return render_template('view-listing.html', listing=listing, bids=get_bids_history(listing_id), highest_bid=highest_bid, active_role=session.get('active_role'), highest_bidder=highest_bidder)
+        
 
         place_bid(listing_id, bidder, bid_price)
         return render_template('view-listing.html', listing=listing, bids=get_bids_history(listing_id), highest_bid=highest_bid, active_role=session.get('active_role'), highest_bidder=highest_bidder)

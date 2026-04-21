@@ -23,10 +23,18 @@
 
                         <h5 class="card-title mb-3">{{ item.name }}</h5>
 
-                        <div class="card-desc-section">
-                            <p class="card-text mb-1">Current Bid: ${{ item.price }}</p>
-                            <p class="card-text mb-1">Highest Bidder: {{ item.highest_bidder }}</p>
-                            <p class="card-text mb-1">Status: {{ item.status }}</p>
+                        <div class="mb-3">
+                            <p class="mb-1"><b>Current Bid:</b> ${{ item.price }}</p>
+                            <p class="mb-1"><b>Highest Bidder:</b> {{ item.highest_bidder }}</p>
+                            <p class="mb-1"><b>Status:</b> 
+                                {% if item.status == 1 %}
+                                    <span class="badge badge-success">Active</span>
+                                {% elif item.status == 0 %}
+                                    <span class="badge badge-secondary">Inactive</span>
+                                {% elif item.status == 2 %}
+                                    <span class="badge badge-danger">Sold</span>
+                                {% endif %}
+                            </p>
                         </div>
 
                         <a href="{{ url_for('view_listing', listing_id=item['listing_id']) }}" class="btn btn-primary mt-auto">View Details</a>

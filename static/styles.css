@@ -17,7 +17,7 @@ html {
 }
 
 .card-title-section{
-  min-height: 50px;
+  min-height: 30px;
   margin-bottom: 10px;
 }
 
@@ -31,14 +31,14 @@ html {
 }
 
 .card-title {
-  line-height: 1.2;
+  line-height: 1.2rem;
   height: 2.4rem;       /* Title always takes up 2 lines */
   overflow: hidden;
 }
 
 .card-desc-section{
   /* margin-top: auto; */
-  min-height: 110px;
+  min-height: 100px;
   padding-bottom: 10px;
 }
 

@@ -121,18 +121,11 @@ def bidder_dashboard():
     items = []
 
     for auction in auction_rows:
-        status_map = {
-            1: "Active",
-            0: "Inactive",
-            2: "Sold"
-        }
-
         # listing = get_auction_listing_by_id(bidder, auction["Listing_ID"])
         listing = get_listing(auction["Listing_ID"])
 
         if listing:
             status = listing["Status"]
-            status = status_map.get(status, "Unknown")
         else:
             status = "Unknown"
 
@@ -435,10 +428,11 @@ def switch_role():
 @app.route('/view_listing/<int:listing_id>', methods=['GET', 'POST'])
 def view_listing(listing_id):
 
+    win = False
     # retrieve auction listing
     listing = get_listing(listing_id)
     if not listing:
-        return "Listing not found.", 404
+        return "Listing not found"
 
     # get reserve price and convert to float for comparison
     reserve_price = float(
@@ -450,8 +444,6 @@ def view_listing(listing_id):
 
     # Handle bid submission
     if request.method == 'POST':
-
-        win = False
 
         # Check if user is logged in
         bidder = session.get('user_email')
@@ -509,14 +501,22 @@ def view_listing(listing_id):
             flash("Only bidders can place bids")
             return render_template('view-listing.html', listing=listing, bids=get_bids_history(listing_id), highest_bid=highest_bid, active_role=session.get('active_role'), highest_bidder=highest_bidder)
         
+
+        place_bid(listing_id, bidder, bid_price)
+
+        # Get updated highest bid and bidder
+        highest_bid = get_highest_bid(listing_id)
+        highest_bidder = get_highest_bidder(listing_id)
+        bids = get_bids_history(listing_id)
+        
         # 7. win the auction
-        if bid_count+1 == max_bids:
+        if bid_count == max_bids:
             win = True
-            return render_template('payment.html', listing=listing, bidder=bidder)
+            return render_template('view-listing.html', listing=listing, bids=get_bids_history(listing_id), highest_bid=highest_bid, active_role=session.get('active_role'), highest_bidder=highest_bidder)
             # flash("Congratulations! You have won the auction!")
 
 
-        place_bid(listing_id, bidder, bid_price)
+        
         return render_template('view-listing.html', listing=listing, bids=get_bids_history(listing_id), highest_bid=highest_bid, active_role=session.get('active_role'), highest_bidder=highest_bidder)
 
     # Get the highest bid and bidder for table display

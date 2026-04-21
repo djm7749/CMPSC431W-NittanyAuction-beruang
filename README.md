@@ -114,11 +114,11 @@ HelpDesk Features
 Category System
 - Supports parent-child hierarchy:
 - Example:
-Electronics
-├── Computers
-│ ├── Laptops
-│ └── Desktops
-└── Phones
+- Electronics
+-    ├── Computers 
+-    │     ├── Laptops 
+-    │     └── Desktops 
+-    └── Phones
 - Users can browse listings through nested categories.
 
 Local Vendors

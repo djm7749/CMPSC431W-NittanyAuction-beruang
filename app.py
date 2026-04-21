@@ -296,6 +296,7 @@ def browse():
     items = []
     for row in auction_rows:
         items.append({
+            "listing_id": row["listing_id"],
             "name": row["name"],
             "description": row["description"],
             "category": row["category"],
@@ -399,6 +400,62 @@ def switch_role():
         return redirect("/seller_dashboard")
     else:
         return redirect("/helpdesk_dashboard")
+
+@app.route('/view_listing/<int:listing_id>', methods=['GET', 'POST'])
+def view_listing(listing_id):
+
+    # retrieve auction listing
+    listing = get_listing(listing_id)
+    if not listing:
+        return "Listing not found.", 404
+
+    # get reserve price and convert to float for comparison
+    reserve_price = float(
+        str(listing["Reserve_Price"])
+        .replace("$", "")
+        .replace(",", "")
+        .strip()
+    )
+
+    # Handle bid submission
+    if request.method == 'POST':
+
+        # Check if user is logged in
+        bidder = session.get('user_email')
+        if not bidder:
+            flash("You must be logged in")
+            return redirect(url_for('login'))
+
+        # Get bid price from form and convert to float
+        bid_price = float(request.form['bid_price'])
+
+        # Check if bid is higher than current highest bid
+        highest_bid = get_highest_bid(listing_id)
+
+        highest_bidder = get_highest_bidder(listing_id)
+
+        if highest_bid is not None and bid_price <= highest_bid:
+            if bid_price < reserve_price:
+                flash("Bid must be higher than reserve price of $" + str(reserve_price))
+                return render_template('view-listing.html', listing=listing, bids=get_bids_history(listing_id), highest_bid=highest_bid, active_role=session.get('active_role'), highest_bidder=highest_bidder)
+
+
+            flash("Bid must be higher than the latest bid")
+            return render_template('view-listing.html', listing=listing, bids=get_bids_history(listing_id), highest_bid=highest_bid, active_role=session.get('active_role'), highest_bidder=highest_bidder  )
+
+        place_bid(listing_id, bidder, bid_price)
+        return render_template('view-listing.html', listing=listing, bids=get_bids_history(listing_id), highest_bid=highest_bid, active_role=session.get('active_role'), highest_bidder=highest_bidder)
+
+    # Get the highest bid and bidder for table display
+    bids = get_bids_history(listing_id)
+    highest_bid = None
+    highest_bidder = None
+
+    if bids:
+        highest_bid = bids[0]['Bid_Price']
+        highest_bidder = bids[0]['Bidder_email']
+
+    return render_template('view-listing.html', listing=listing, bids=get_bids_history(listing_id), highest_bid=highest_bid, active_role=session.get('active_role'), highest_bidder=highest_bidder)
 
 
 # Helper Function : Make a hierarchical tree from category database
@@ -671,7 +728,7 @@ def approve_request(request_id):
     # mark request completed
     cur.execute("""
         UPDATE Requests
-        SET request_status = 1,
+        SET request_status = 1
         WHERE request_id = ?
     """, (
         request_id
@@ -731,6 +788,9 @@ def remove_vendor(vendor_email):
     conn.close()
 
     return redirect(url_for('helpdesk_dashboard'))
+
+
+
 
 
 if __name__ == '__main__':

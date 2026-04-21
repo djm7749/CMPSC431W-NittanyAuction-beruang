@@ -364,3 +364,88 @@ def get_category_path(category):
 
     conn.close()
     return path
+
+def get_listing(listing_id):
+    conn = db_connect()
+    cur = conn.cursor()
+
+    cur.execute("""
+        SELECT *
+        FROM Auction_Listings
+        WHERE Listing_ID = ?
+    """, (listing_id,))
+
+    listing = cur.fetchone()
+    conn.close()
+
+    return listing  
+
+def get_bids_history(listing_id):
+    conn = db_connect()
+    cur = conn.cursor()
+
+    cur.execute("""
+        SELECT Bidder_email, Bid_Price
+        FROM Bids
+        WHERE Listing_ID = ?
+        ORDER BY Bid_Price DESC
+    """, (listing_id,))
+
+    bids = cur.fetchall()
+    conn.close()
+
+    return bids
+
+def place_bid(listing_id, bidder_email, bid_price):
+    conn = db_connect()
+    cur = conn.cursor()
+
+    cur.execute("SELECT MAX(Bid_ID) FROM Bids")
+    max_bid_id = cur.fetchone()
+    next_bid_id = (max_bid_id[0] + 1) if max_bid_id[0] is not None else 1
+
+    seller_email = get_listing(listing_id)["Seller_Email"]
+
+    cur.execute("""
+        INSERT INTO Bids (Bid_ID, Listing_ID, Bidder_email, Bid_Price, Seller_Email)
+        VALUES (?, ?, ?, ?, ?)
+    """, (next_bid_id, listing_id, bidder_email, bid_price, seller_email))
+
+    conn.commit()
+    conn.close()
+
+def get_highest_bid(listing_id):
+    conn = db_connect()
+    cur = conn.cursor()
+
+    cur.execute("""
+        SELECT MAX(Bid_Price) AS highest_bid
+        FROM Bids
+        WHERE Listing_ID = ?
+    """, (listing_id,))
+
+    result = cur.fetchone()
+    conn.close()
+
+    if result["highest_bid"] is not None:
+        return result["highest_bid"]
+    
+
+def get_highest_bidder(listing_id):
+    conn = db_connect()
+    cur = conn.cursor()
+
+    cur.execute("""
+        SELECT Bidder_email
+        FROM Bids
+        WHERE Listing_ID = ?
+        ORDER BY Bid_Price DESC
+        LIMIT 1
+    """, (listing_id,))
+
+    result = cur.fetchone()
+    conn.close()
+
+    if result:
+        return result["Bidder_email"]
+    

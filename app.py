@@ -127,8 +127,6 @@ def bidder_dashboard():
         #     2: "Sold"
         # }
 
-        print(auction.keys())
-
         highest_bidder = auction["Bidder_Email"] if auction["Bidder_Email"] else "No bids yet"
 
         if highest_bidder == bidder:
@@ -783,7 +781,7 @@ def approve_request(request_id):
     # mark request completed
     cur.execute("""
         UPDATE Requests
-        SET request_status = 1,
+        SET request_status = 1
         WHERE request_id = ?
     """, (
         request_id

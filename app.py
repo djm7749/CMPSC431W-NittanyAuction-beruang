@@ -121,24 +121,27 @@ def bidder_dashboard():
     items = []
 
     for auction in auction_rows:
-        # status_map = {
-        #     1: "Active",
-        #     0: "Inactive",
-        #     2: "Sold"
-        # }
+        # listing = get_auction_listing_by_id(bidder, auction["Listing_ID"])
+        listing = get_listing(auction["Listing_ID"])
 
-        print(auction.keys())
+        if listing:
+            status = listing["Status"]
+        else:
+            status = "Unknown"
 
         highest_bidder = auction["Bidder_Email"] if auction["Bidder_Email"] else "No bids yet"
 
         if highest_bidder == bidder:
             highest_bidder = "You"
 
+        
+
         items.append({
+            "listing_id": auction["Listing_ID"],
             "name": auction["name"],
             "price": auction["Bid_Price"] if auction["Bid_Price"] else 0,
             "highest_bidder": highest_bidder,
-            # "status": status_map.get(auction["status"], "Unknown"),
+            "status": status,
             "image": "default-auction.jpg"
         })
 
@@ -425,10 +428,11 @@ def switch_role():
 @app.route('/view_listing/<int:listing_id>', methods=['GET', 'POST'])
 def view_listing(listing_id):
 
+    win = False
     # retrieve auction listing
     listing = get_listing(listing_id)
     if not listing:
-        return "Listing not found.", 404
+        return "Listing not found"
 
     # get reserve price and convert to float for comparison
     reserve_price = float(
@@ -492,12 +496,27 @@ def view_listing(listing_id):
             flash("Maximum number of bids reached for this listing")
             return render_template('view-listing.html', listing=listing, bids=get_bids_history(listing_id), highest_bid=highest_bid, active_role=session.get('active_role'), highest_bidder=highest_bidder)
 
+        # 6. Check if user is a bidder, seller cannot bit
         if session.get('active_role') != "Bidder":
             flash("Only bidders can place bids")
             return render_template('view-listing.html', listing=listing, bids=get_bids_history(listing_id), highest_bid=highest_bid, active_role=session.get('active_role'), highest_bidder=highest_bidder)
         
 
         place_bid(listing_id, bidder, bid_price)
+
+        # Get updated highest bid and bidder
+        highest_bid = get_highest_bid(listing_id)
+        highest_bidder = get_highest_bidder(listing_id)
+        bids = get_bids_history(listing_id)
+        
+        # 7. win the auction
+        if bid_count == max_bids:
+            win = True
+            return render_template('view-listing.html', listing=listing, bids=get_bids_history(listing_id), highest_bid=highest_bid, active_role=session.get('active_role'), highest_bidder=highest_bidder)
+            # flash("Congratulations! You have won the auction!")
+
+
+        
         return render_template('view-listing.html', listing=listing, bids=get_bids_history(listing_id), highest_bid=highest_bid, active_role=session.get('active_role'), highest_bidder=highest_bidder)
 
     # Get the highest bid and bidder for table display
@@ -509,7 +528,7 @@ def view_listing(listing_id):
         highest_bid = bids[0]['Bid_Price']
         highest_bidder = bids[0]['Bidder_email']
 
-    return render_template('view-listing.html', listing=listing, bids=get_bids_history(listing_id), highest_bid=highest_bid, active_role=session.get('active_role'), highest_bidder=highest_bidder)
+    return render_template('view-listing.html', listing=listing, bids=get_bids_history(listing_id), highest_bid=highest_bid, active_role=session.get('active_role'), highest_bidder=highest_bidder, win=win)
 
 
 # Helper Function : Make a hierarchical tree from category database

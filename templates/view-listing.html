@@ -15,11 +15,11 @@
         </div>
         <div class="col-md-7 d-flex flex-column justify-content-center">
             <h3>{{ listing['Product_Name'] }}</h3>
-            <div class="mt-3">
+            <div class="mt-2">
                 <p><strong>Seller:</strong> {{ listing['Seller_Email'] }}</p>
                 <p><strong>Description:</strong> {{ listing['Product_Description'] }}</p>
                 <p><strong>Category:</strong> {{ listing['Category'] }}</p>
-                
+                <p><strong>Maximum Bid:</strong> {{ listing['Max_bids'] }}</p>
                 <p><strong>Reserve Price:</strong> {{ listing['Reserve_Price'] }}</p>
                 
                 <!-- <p><strong>Highest Bid:</strong> {{ highest_bid }}</p>
@@ -43,7 +43,13 @@
                     <input type="number" name="bid_price" step="1" min="1"
                         class="form-control" placeholder="Enter your bid" required>
                 </div>
-                <button type="submit" class="btn btn-primary">Place Bid</button>
+                {% if win %}
+                <div class="alert alert-success">
+                    <button type="submit" class="btn btn-primary mb-3">Place Bid</button>
+                </div>
+                {% else %}
+                <button type="submit" class="btn btn-primary mb-3">Place Bid</button>
+                {% endif %}
             </form>
             {% if error %}
             <div class="alert alert-danger mt-2">

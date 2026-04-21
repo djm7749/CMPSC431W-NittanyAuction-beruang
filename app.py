@@ -159,9 +159,7 @@ def create_auction():
     seller_email = session.get('user_email')
 
     # Load category hierarchy
-    category_rows = get_categories()
-    category_tree = load_categories(category_rows)
-    category_options = flatten_categories_for_select(category_tree)
+    category_options = build_category_dropdown(None)
 
     if request.method == 'POST':
         auction_title = request.form.get('auction_title', '').strip()
@@ -184,12 +182,17 @@ def seller_listing_detail(listing_id):
 
     # retrieve auction listing by id
     listing = get_auction_listing_by_id(seller_email,listing_id)
-    category_rows = get_categories()
-    category_tree = load_categories(category_rows)
-    category_options = flatten_categories_for_select(category_tree)
+    # build categories for dropdown
+    category_options = build_category_dropdown(None)
+    # Initialize removal info
+    removal_info = None
 
     if not listing:
         return "Listing not found.", 404
+
+    # Convert reserve_price (str) into (float) to be displayed in
+    reserve_price_value = listing["Reserve_Price"].replace('$','')
+    reserve_price_value = float(reserve_price_value)
 
     # count bids already placed on that auction listing
     bid_count = get_bid_count(seller_email,listing_id)
@@ -205,9 +208,41 @@ def seller_listing_detail(listing_id):
     elif listing["Status"] == 1 and bid_count > 0:
         edit_blocked = True
         edit_message = "This active listing cannot be edited because bidding has already started."
+    elif listing["Status"] == 0:
+        edit_blocked = True
+        edit_message = "This listing is inactive and can no longer be edited."
+        removal_info = get_listing_removal(seller_email,listing_id)
 
     return render_template(
-        'listing_details.html',listing=listing,bid_count=bid_count,edit_blocked=edit_blocked,edit_message=edit_message,active_role=active_role,categories=category_options)
+        'listing_details.html',listing=listing,bid_count=bid_count,reserve_price_value=reserve_price_value,edit_blocked=edit_blocked,edit_message=edit_message,active_role=active_role,categories=category_options,removal_info=removal_info)
+@app.route('/seller_dashboard/listing/<int:listing_id>/update', methods=['POST'])
+def update_listing(listing_id):
+    seller_email = session.get('user_email')
+
+    name = request.form.get('name', '').strip()
+    description = request.form.get('description', '').strip()
+    category = request.form.get('category', '').strip()
+    reserve_price_raw = request.form.get('reserve_price', '').strip()
+    reserve_price = f"${reserve_price_raw}"
+    quantity = request.form.get('quantity', '').strip()
+    max_bids = request.form.get('max_bids', '').strip()
+
+    update_auction_listing(seller_email,listing_id,name,description,
+        category,reserve_price,quantity,max_bids)
+
+    flash("Listing updated successfully.")
+    return redirect(url_for('seller_dashboard'))
+
+@app.route('/seller_dashboard/listing/<int:listing_id>/remove', methods=['POST'])
+def remove_listing(listing_id):
+    seller_email = session.get('user_email')
+
+    removal_reason = request.form.get('removal_reason', '').strip()
+
+    mark_listing_unactive(seller_email,listing_id,removal_reason)
+
+    flash("Listing marked inactive.")
+    return redirect(url_for('seller_dashboard'))
 
 @app.route('/browse')
 def browse():
@@ -377,7 +412,7 @@ def view_listing(listing_id):
     listing = get_listing(listing_id)
     if not listing:
         return "Listing not found.", 404
-    
+
     # get reserve price and convert to float for comparison
     reserve_price = float(
         str(listing["Reserve_Price"])
@@ -400,7 +435,7 @@ def view_listing(listing_id):
 
         # Get bid price from form and convert to float
         bid_price = float(request.form['bid_price'])
-                
+
         # Check if bid is higher than current highest bid
         highest_bid = get_highest_bid(listing_id)
 
@@ -423,7 +458,7 @@ def view_listing(listing_id):
             if bid_price < reserve_price:
                 flash("Bid must be higher than reserve price")
                 return render_template('view-listing.html', listing=listing, bids=get_bids_history(listing_id), highest_bid=highest_bid, active_role=session.get('active_role'), highest_bidder=highest_bidder)
-            
+
             # 3(b) Bid is higher than reserve price but not higher than current highest bid
             flash("Bid must be higher than the latest bid")
             return render_template('view-listing.html', listing=listing, bids=get_bids_history(listing_id), highest_bid=highest_bid, active_role=session.get('active_role'), highest_bidder=highest_bidder  )
@@ -442,7 +477,7 @@ def view_listing(listing_id):
 
         place_bid(listing_id, bidder, bid_price)
         return render_template('view-listing.html', listing=listing, bids=get_bids_history(listing_id), highest_bid=highest_bid, active_role=session.get('active_role'), highest_bidder=highest_bidder)
-    
+
     # Get the highest bid and bidder for table display
     bids = get_bids_history(listing_id)
     highest_bid = None
@@ -456,52 +491,336 @@ def view_listing(listing_id):
 
 
 # Helper Function : Make a hierarchical tree from category database
-def load_categories(rows):
-    nodes = {}
-    tree = []
+# def load_categories(rows):
+#     nodes = {}
+#     tree = []
+#
+#     for row in rows:
+#         name = row['category_name'].strip()
+#         parent = row['parent_category'].strip() if row['parent_category'] else None
+#
+#         node = {
+#             'name': name,
+#             'parent': parent,
+#             'children': [],
+#         }
+#
+#         nodes[name] = node
+#
+#     for node in nodes.values():
+#         parent = node['parent']
+#
+#         if parent == '' or parent is None:
+#             tree.append(node)
+#         elif parent in nodes:
+#             nodes[parent]['children'].append(node)
+#         else:
+#             tree.append(node)
+#
+#     return tree
 
-    for row in rows:
-        name = row['category_name'].strip()
-        parent = row['parent_category'].strip() if row['parent_category'] else None
-
-        node = {
-            'name': name,
-            'parent': parent,
-            'children': [],
-        }
-
-        nodes[name] = node
-
-    for node in nodes.values():
-        parent = node['parent']
-
-        if parent == '' or parent is None:
-            tree.append(node)
-        elif parent in nodes:
-            nodes[parent]['children'].append(node)
-        else:
-            tree.append(node)
-
-    return tree
-
-# Helper function for loading categories in create auction
-def flatten_categories_for_select(nodes, result=None, level=0):
+# Helper function for loading categories in dropdown - used in create and edit auction for sellers
+def build_category_dropdown(parent_category=None, level=0, result=None):
     if result is None:
         result = []
 
-    for node in nodes:
-        # usually sellers should not list directly under root "All"
-        if node['name'].lower() != 'all':
+    rows = get_categories(parent_category)
+
+    for row in rows:
+        category_name = row['category_name']
+        # Skip 'root' category
+        if category_name != "Root":
             result.append({
-                'name': node['name'],
-                'display_name': ('-- ' * level) + node['name']
+                "name": category_name,
+                "display_name": ("-" * level) + category_name,
             })
 
-        if node['children']:
-            flatten_categories_for_select(node['children'], result, level + 1)
+        build_category_dropdown(category_name, level + 1, result)
 
     return result
 
+@app.route('/add_category', methods=['GET', 'POST'])
+def add_category():
+
+    # helpdesk access only
+    if 'user_email' not in session:
+        return redirect(url_for('login'))
+
+    if session.get('role') != 'Helpdesk':
+        return redirect(url_for('login'))
+
+    conn = db_connect()
+    cur = conn.cursor()
+
+    # load existing categories
+    cur.execute("""
+        SELECT *
+        FROM Categories
+        ORDER BY category_name
+    """)
+
+    categories = cur.fetchall()
+
+
+    # submit new categories
+    if request.method == 'POST':
+
+        new_name = request.form['category_name'].strip()
+        parent = request.form['parent_category'].strip()
+
+        if new_name:
+
+            # avoid duplicates
+            cur.execute("""
+                SELECT *
+                FROM Categories
+                WHERE category_name = ?
+            """, (new_name,))
+
+            exists = cur.fetchone()
+
+            if not exists:
+
+                cur.execute("""
+                    INSERT INTO Categories
+                    (
+                        category_name,
+                        parent_category
+                    )
+                    VALUES (?, ?)
+                """, (
+                    new_name,
+                    parent if parent else None
+                ))
+
+                conn.commit()
+
+        conn.close()
+
+        return redirect(url_for('helpdesk_dashboard'))
+
+    conn.close()
+
+    return render_template(
+        "add_category.html",
+        categories=categories
+    )
+
+@app.route('/change_user_id/<int:request_id>', methods=['GET', 'POST'])
+def change_user_id(request_id):
+
+    #helpdesk access only
+    if 'user_email' not in session:
+        return redirect(url_for('login'))
+
+    if session.get('role') != 'Helpdesk':
+        return redirect(url_for('login'))
+
+    conn = db_connect()
+    cur = conn.cursor()
+
+    # LOAD REQUEST
+    cur.execute("""
+        SELECT *
+        FROM Requests
+        WHERE request_id = ?
+    """, (request_id,))
+
+    req = cur.fetchone()
+
+    if not req:
+        conn.close()
+        return redirect(url_for('helpdesk_dashboard'))
+
+    # SUBMIT CHANGE
+    if request.method == 'POST':
+
+        old_email = request.form['old_email'].strip().lower()
+        new_email = request.form['new_email'].strip().lower()
+
+        # duplicate check
+        cur.execute("""
+            SELECT *
+            FROM Users
+            WHERE email = ?
+        """, (new_email,))
+
+        if cur.fetchone():
+            conn.close()
+            return render_template(
+                "change_id.html",
+                req=req,
+                error="New ID already exists."
+            )
+
+
+        # UPDATE ALL TABLES
+        tables = [
+
+            ("Users", "email"),
+            ("Bidders", "email"),
+            ("Sellers", "email"),
+            ("Helpdesk", "email"),
+            ("Local_Vendors", "Email"),
+
+            ("Auction_Listings", "Seller_Email"),
+
+            ("Credit_Cards", "Owner_email"),
+
+            ("Requests", "sender_email"),
+            ("Requests", "helpdesk_staff_email"),
+
+            ("Rating", "Bidder_Email"),
+            ("Rating", "Seller_Email"),
+
+            ("Bids", "Bidder_Email"),
+            ("Bids", "Seller_Email")
+
+        ]
+
+        for table, column in tables:
+
+            cur.execute(f"""
+                UPDATE {table}
+                SET {column} = ?
+                WHERE {column} = ?
+            """, (
+                new_email,
+                old_email
+            ))
+
+        # mark request completed
+        cur.execute("""
+            UPDATE Requests
+            SET request_status = 1
+            WHERE request_id = ?
+        """, (request_id,))
+
+        conn.commit()
+        conn.close()
+
+        return redirect(url_for('helpdesk_dashboard'))
+
+    conn.close()
+
+    return render_template(
+        "change_id.html",
+        req=req
+    )
+
+@app.route('/approve_request/<int:request_id>')
+def approve_request(request_id):
+
+    if 'user_email' not in session:
+        return redirect(url_for('login'))
+
+    helpdesk_email = session['user_email']
+
+    conn = db_connect()
+    cur = conn.cursor()
+
+    # get request
+    cur.execute("""
+        SELECT *
+        FROM Requests
+        WHERE request_id = ?
+    """, (request_id,))
+
+    req = cur.fetchone()
+
+    if not req:
+        conn.close()
+        return redirect(url_for('helpdesk_dashboard'))
+
+    sender_email = req["sender_email"]
+    request_type = req["request_type"]
+
+    # Seller Application approval
+    if request_type == "SellerApplication":
+
+        # already seller?
+        cur.execute("""
+            SELECT *
+            FROM Sellers
+            WHERE Email = ?
+        """, (sender_email,))
+
+        if not cur.fetchone():
+
+            cur.execute("""
+                INSERT INTO Sellers
+                (Email, bank_routing_number, bank_account_number, balance)
+                VALUES (?, ?, ?, ?)
+            """, (
+                sender_email,
+                None,
+                None,
+                0
+            ))
+
+    # mark request completed
+    cur.execute("""
+        UPDATE Requests
+        SET request_status = 1,
+        WHERE request_id = ?
+    """, (
+        request_id
+    ))
+
+    conn.commit()
+    conn.close()
+
+    return redirect(url_for('helpdesk_dashboard'))
+
+@app.route('/remove_vendor/<vendor_email>')
+def remove_vendor(vendor_email):
+
+    # ONLY HELPDESK CAN USE THIS
+    if 'user_email' not in session:
+        return redirect(url_for('login'))
+
+    if session.get('role') != 'Helpdesk':
+        return redirect(url_for('login'))
+
+    conn = db_connect()
+    cur = conn.cursor()
+
+    # VERIFY THIS IS A LOCAL VENDOR
+    cur.execute("""
+        SELECT *
+        FROM Local_Vendors
+        WHERE Email = ?
+    """, (vendor_email,))
+
+    vendor = cur.fetchone()
+
+    if not vendor:
+        conn.close()
+        return redirect(url_for('helpdesk_dashboard'))
+
+    # REMOVE ALL THEIR PRODUCTS
+    cur.execute("""
+        DELETE FROM Auction_Listings
+        WHERE Seller_Email = ?
+    """, (vendor_email,))
+
+    # optional cleanup bids tied to listings
+    cur.execute("""
+        DELETE FROM Bids
+        WHERE Seller_Email = ?
+    """, (vendor_email,))
+
+
+    # REMOVE LOCAL VENDOR RECORD
+    cur.execute("""
+        DELETE FROM Local_Vendors
+        WHERE Email = ?
+    """, (vendor_email,))
+
+    conn.commit()
+    conn.close()
+
+    return redirect(url_for('helpdesk_dashboard'))
 
 
 

@@ -114,15 +114,15 @@ def update_password(email, password_hash):
     conn.commit()
     conn.close()
 
-def update_bidder(first_name, last_name, age, home_address_id, major, email):
+def update_bidder(first_name, last_name, age, major, email):
     conn = db_connect()
     cur = conn.cursor()
 
     cur.execute("""
                 UPDATE Bidders
-                SET first_name = ?, last_name  = ?, age = ?, home_address_id = ?, major = ?
+                SET first_name = ?, last_name  = ?, age = ?, major = ?
                 WHERE email = ?
-                """, (first_name, last_name, age , home_address_id, major, email))
+                """, (first_name, last_name, age , major, email))
     conn.commit()
     conn.close()
 
@@ -429,7 +429,8 @@ def get_highest_bid(listing_id):
 
     if result["highest_bid"] is not None:
         return result["highest_bid"]
-    
+    return None
+
 
 def get_highest_bidder(listing_id):
     conn = db_connect()
@@ -448,4 +449,77 @@ def get_highest_bidder(listing_id):
 
     if result:
         return result["Bidder_email"]
+    return None
     
+def get_user_address_id(email, roles):
+    conn = db_connect()
+    cur = conn.cursor()
+
+    if "Bidder" in roles:
+        cur.execute("""
+            SELECT home_address_id
+            FROM Bidders
+            WHERE email = ?
+        """, (email,))
+    else:
+        cur.execute("""
+            SELECT business_address_id
+            FROM Local_Vendors
+            WHERE email = ?
+        """, (email,))
+
+    address_row = cur.fetchone()
+    address_id = address_row[0]
+
+    conn.close()
+
+    return address_id
+
+def get_user_address(email,roles):
+    conn = db_connect()
+    cur = conn.cursor()
+
+    address_id = get_user_address_id(email, roles)
+    cur.execute("""
+        SELECT zipcode, street_num, street_name
+        FROM Address
+        WHERE address_id = ?
+    """, (address_id,))
+
+    result = cur.fetchone()
+    conn.close()
+    return result
+
+def update_user_address(address_id, street_num, street_name, zipcode):
+    conn = db_connect()
+    cur = conn.cursor()
+
+    cur.execute("""
+        UPDATE Address
+        SET street_num = ?, street_name = ?, zipcode = ?
+        WHERE address_id = ?
+    """, (street_num, street_name,zipcode,address_id))
+
+    conn.commit()
+    conn.close()
+
+def get_user_credit_cards(email):
+    conn = db_connect()
+    cur = conn.cursor()
+
+    cur.execute("""
+        SELECT *
+        FROM Credit_Cards
+        WHERE owner_email = ?
+    """, (email,))
+
+    cards = cur.fetchall()
+    conn.close()
+
+    if not cards:
+        return []
+    return cards
+
+
+
+

@@ -29,7 +29,7 @@
                             <p class="card-text mb-1">Status: {{ item.status }}</p>
                         </div>
 
-                        <a href="#" class="btn btn-primary mt-auto">View Details</a>
+                        <a href="{{ url_for('view_listing', listing_id=item['listing_id']) }}" class="btn btn-primary mt-auto">View Details</a>
 
                     </div>
                 </div>

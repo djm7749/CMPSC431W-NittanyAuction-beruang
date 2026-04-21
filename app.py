@@ -1,14 +1,6 @@
-from unicodedata import category
-
-from idlelib.debugobj_r import remote_object_tree_item
-
 from flask import Flask, render_template, request, session, redirect, url_for, flash
-import sqlite3
 import hashlib
 from db import *
-
-from pandas.core.config_init import parquet_engine_doc
-
 from init_db import init_db
 
 app = Flask(__name__)
@@ -49,17 +41,17 @@ def login():
 
         if session['active_role'] == "Helpdesk":
             session['user_email'] = email
-            session['role'] = 'Helpdesk'
+            session['roles'] = 'Helpdesk'
             return redirect(url_for('helpdesk_dashboard'))
 
         elif session['active_role'] == "Seller":
             session['user_email'] = email
-            session['role'] = 'Seller'
+            session['roles'] = 'Seller'
             return redirect(url_for('seller_dashboard'))
 
         elif session['active_role'] == "Bidder":
             session['user_email'] = email
-            session['role'] = 'Bidder'
+            session['roles'] = 'Bidder'
             return redirect(url_for('bidder_dashboard'))
 
         else:
@@ -315,6 +307,8 @@ def update_profile():
     user_email = session['user_email']
     user = get_user(user_email)
     active_role = session.get('active_role')
+    address_id = get_user_address_id(user_email, roles = get_user_roles(user_email))
+
     if not user_email:
         return redirect("/")
 
@@ -322,35 +316,44 @@ def update_profile():
     old_password = request.form.get('old_password')
     new_password = request.form.get('new_password')
     confirm_password = request.form.get('confirm_password')
+    street_num = request.form.get('street_num')
+    street_name = request.form.get('street_name')
+    zip_code = request.form.get('zip_code')
 
+    # Update User First Name, Last Name, Age, Major
     if active_role == "Bidder":
         first_name = request.form.get('first_name')
         last_name = request.form.get('last_name')
         age = request.form.get('age')
-        home_address_id = "random"
         major = request.form.get('major')
         try:
-            update_bidder(first_name, last_name, age, home_address_id, major, user_email)
+            update_bidder(first_name, last_name, age, major, user_email)
             print("Updated Bidder Profile")
         except Exception as e:
             print("Error updating Bidder Profile", e)
 
+    # Update User Password
+    # 1. Check Users Password cannot be empty
     if new_password and new_password.strip() != "":
         print("Password in not null")
+        # 2. Check New Password need to be same with Confirm Password
         if new_password != confirm_password:
             flash("Passwords do not match")
             print("Passwords do not match")
             return redirect("/account")
+        # 3. Old Password cannot be empty
         if not old_password:
             flash("Old password is required")
             print("Old password is required")
             return redirect("/account")
         hashed_input = hashlib.sha256(old_password.encode()).hexdigest()
+        # 4. Old Password need to match before changing a new password
         if user['password_hash'] != hashed_input:
             flash("Current password does not match")
             print("Current password does not match")
             return redirect("/account")
         hashed_password = hashlib.sha256(new_password.encode()).hexdigest()
+        # If all is good, It will try to update the Users Table in DB with new hashed password
         try:
             update_password(user_email, hashed_password)
             password_updated = True
@@ -358,6 +361,15 @@ def update_profile():
         except Exception as e:
             print("Error updating Password", e)
 
+
+    # Update User Address
+    try:
+        update_user_address(address_id, street_num, street_name, zip_code)
+        print("Updated Address")
+    except Exception as e:
+        print("Error updating Address", e)
+
+    # Redirect User to login page if user manages to update password
     if password_updated:
         return redirect("/login")
     return redirect("/account")
@@ -372,7 +384,6 @@ def account():
         return redirect("/")
 
     roles = get_user_roles(session['user_email'])
-    print(roles)
     active_role = session.get('active_role')
     if active_role == 'Helpdesk':
         user_row = get_helpdesk(user_email)
@@ -381,7 +392,10 @@ def account():
     else:
         user_row = get_bidder(user_email)
 
-    return render_template('account.html', user_data = user_row, active_role=active_role, roles = roles)
+    user_address = get_user_address(user_email, roles)
+    user_credit_cards = get_user_credit_cards(user_email)
+
+    return render_template('account.html', user_data = user_row, active_role=active_role, roles = roles, user_address=user_address, credit_cards=user_credit_cards)
 
 @app.route('/switch_role', methods=['POST'])
 def switch_role():
@@ -681,8 +695,6 @@ def approve_request(request_id):
     if 'user_email' not in session:
         return redirect(url_for('login'))
 
-    helpdesk_email = session['user_email']
-
     conn = db_connect()
     cur = conn.cursor()
 
@@ -738,59 +750,6 @@ def approve_request(request_id):
     conn.close()
 
     return redirect(url_for('helpdesk_dashboard'))
-
-@app.route('/remove_vendor/<vendor_email>')
-def remove_vendor(vendor_email):
-
-    # ONLY HELPDESK CAN USE THIS
-    if 'user_email' not in session:
-        return redirect(url_for('login'))
-
-    if session.get('role') != 'Helpdesk':
-        return redirect(url_for('login'))
-
-    conn = db_connect()
-    cur = conn.cursor()
-
-    # VERIFY THIS IS A LOCAL VENDOR
-    cur.execute("""
-        SELECT *
-        FROM Local_Vendors
-        WHERE Email = ?
-    """, (vendor_email,))
-
-    vendor = cur.fetchone()
-
-    if not vendor:
-        conn.close()
-        return redirect(url_for('helpdesk_dashboard'))
-
-    # REMOVE ALL THEIR PRODUCTS
-    cur.execute("""
-        DELETE FROM Auction_Listings
-        WHERE Seller_Email = ?
-    """, (vendor_email,))
-
-    # optional cleanup bids tied to listings
-    cur.execute("""
-        DELETE FROM Bids
-        WHERE Seller_Email = ?
-    """, (vendor_email,))
-
-
-    # REMOVE LOCAL VENDOR RECORD
-    cur.execute("""
-        DELETE FROM Local_Vendors
-        WHERE Email = ?
-    """, (vendor_email,))
-
-    conn.commit()
-    conn.close()
-
-    return redirect(url_for('helpdesk_dashboard'))
-
-
-
 
 
 if __name__ == '__main__':

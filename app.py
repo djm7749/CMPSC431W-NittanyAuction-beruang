@@ -129,9 +129,15 @@ def bidder_dashboard():
 
         print(auction.keys())
 
+        highest_bidder = auction["Bidder_Email"] if auction["Bidder_Email"] else "No bids yet"
+
+        if highest_bidder == bidder:
+            highest_bidder = "You"
+
         items.append({
             "name": auction["name"],
-            "price": auction["highest_bid"] if auction["highest_bid"] else 0,
+            "price": auction["Bid_Price"] if auction["Bid_Price"] else 0,
+            "highest_bidder": highest_bidder,
             # "status": status_map.get(auction["status"], "Unknown"),
             "image": "default-auction.jpg"
         })
@@ -485,6 +491,11 @@ def view_listing(listing_id):
         if bid_count >= max_bids:
             flash("Maximum number of bids reached for this listing")
             return render_template('view-listing.html', listing=listing, bids=get_bids_history(listing_id), highest_bid=highest_bid, active_role=session.get('active_role'), highest_bidder=highest_bidder)
+
+        if session.get('active_role') != "Bidder":
+            flash("Only bidders can place bids")
+            return render_template('view-listing.html', listing=listing, bids=get_bids_history(listing_id), highest_bid=highest_bid, active_role=session.get('active_role'), highest_bidder=highest_bidder)
+        
 
         place_bid(listing_id, bidder, bid_price)
         return render_template('view-listing.html', listing=listing, bids=get_bids_history(listing_id), highest_bid=highest_bid, active_role=session.get('active_role'), highest_bidder=highest_bidder)

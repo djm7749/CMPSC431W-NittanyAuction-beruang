@@ -135,17 +135,24 @@ def get_bidder_auctions(bidder_email):
         SELECT 
             a.Listing_ID,
             a.Product_Name AS name,
-            
+            b.Bidder_Email,
+            b.Bid_Price
 
-            MAX(b.Bid_Price) AS highest_bid
-
-        FROM Auction_Listings a, bids
-        JOIN Bids b 
+        FROM Bids b
+        JOIN Auction_Listings a 
             ON a.Listing_ID = b.Listing_ID
 
-        WHERE b.Bidder_Email = ?
+        WHERE b.Bid_Price = (
+            SELECT MAX(b2.Bid_Price)
+            FROM Bids b2
+            WHERE b2.Listing_ID = b.Listing_ID
+        )
 
-        GROUP BY a.Listing_ID
+        AND a.Listing_ID IN (
+            SELECT Listing_ID 
+            FROM Bids 
+            WHERE Bidder_Email = ?
+        )
     """, (bidder_email,))
 
     rows = cur.fetchall()

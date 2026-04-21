@@ -123,9 +123,11 @@
                                 <p class="card-text text-muted mb-1" style="font-size: 14px;">{{ item.description }}</p>
                                 <p class="card-text mb-1"><strong>Category:</strong> {{ item.category }}</p>
                                 <p class="card-text mb-1"><strong>Seller:</strong> {{ item.seller }}</p>
-                                <p class="card-text">Current Bid: ${{ item.price }}</p>
+                                <!-- <p class="card-text">Current Bid: ${{ item.price }}</p> -->             
+                                 
+                                
                             </div>
-                            <a href="#" class="btn btn-primary mt-auto">Place Bid</a>
+                            <a href="{{ url_for('view_listing', listing_id=item['listing_id']) }}" class="btn btn-primary mt-auto">Place Bid</a>
                         </div>
 
                     <!-- </div> -->

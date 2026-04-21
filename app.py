@@ -212,9 +212,7 @@ def create_auction():
     seller_email = session.get('user_email')
 
     # Load category hierarchy
-    category_rows = get_categories()
-    category_tree = load_categories(category_rows)
-    category_options = flatten_categories_for_select(category_tree)
+    category_options = build_category_dropdown(None)
 
     if request.method == 'POST':
         auction_title = request.form.get('auction_title', '').strip()
@@ -237,12 +235,14 @@ def seller_listing_detail(listing_id):
 
     # retrieve auction listing by id
     listing = get_auction_listing_by_id(seller_email,listing_id)
-    category_rows = get_categories()
-    category_tree = load_categories(category_rows)
-    category_options = flatten_categories_for_select(category_tree)
+    category_options = build_category_dropdown(None)
 
     if not listing:
         return "Listing not found.", 404
+
+    # Convert reserve_price (str) into (float) to be displayed in
+    reserve_price_value = listing["Reserve_Price"].replace('$','')
+    reserve_price_value = float(reserve_price_value)
 
     # count bids already placed on that auction listing
     bid_count = get_bid_count(seller_email,listing_id)
@@ -260,7 +260,24 @@ def seller_listing_detail(listing_id):
         edit_message = "This active listing cannot be edited because bidding has already started."
 
     return render_template(
-        'listing_details.html',listing=listing,bid_count=bid_count,edit_blocked=edit_blocked,edit_message=edit_message,active_role=active_role,categories=category_options)
+        'listing_details.html',listing=listing,bid_count=bid_count,reserve_price_value=reserve_price_value,edit_blocked=edit_blocked,edit_message=edit_message,active_role=active_role,categories=category_options)
+@app.route('/seller_dashboard/listing/<int:listing_id>/update', methods=['POST'])
+def update_listing(listing_id):
+    seller_email = session.get('user_email')
+
+    name = request.form.get('name', '').strip()
+    description = request.form.get('description', '').strip()
+    category = request.form.get('category', '').strip()
+    reserve_price_raw = request.form.get('reserve_price', '').strip()
+    reserve_price = f"${reserve_price_raw}"
+    quantity = request.form.get('quantity', '').strip()
+    max_bids = request.form.get('max_bids', '').strip()
+
+    update_auction_listing(seller_email,listing_id,name,description,
+        category,reserve_price,quantity,max_bids)
+
+    flash("Listing updated successfully.")
+    return redirect(url_for('seller_dashboard'))
 
 @app.route('/browse')
 def browse():
@@ -402,52 +419,53 @@ def switch_role():
 
 
 # Helper Function : Make a hierarchical tree from category database
-def load_categories(rows):
-    nodes = {}
-    tree = []
+# def load_categories(rows):
+#     nodes = {}
+#     tree = []
+#
+#     for row in rows:
+#         name = row['category_name'].strip()
+#         parent = row['parent_category'].strip() if row['parent_category'] else None
+#
+#         node = {
+#             'name': name,
+#             'parent': parent,
+#             'children': [],
+#         }
+#
+#         nodes[name] = node
+#
+#     for node in nodes.values():
+#         parent = node['parent']
+#
+#         if parent == '' or parent is None:
+#             tree.append(node)
+#         elif parent in nodes:
+#             nodes[parent]['children'].append(node)
+#         else:
+#             tree.append(node)
+#
+#     return tree
 
-    for row in rows:
-        name = row['category_name'].strip()
-        parent = row['parent_category'].strip() if row['parent_category'] else None
-
-        node = {
-            'name': name,
-            'parent': parent,
-            'children': [],
-        }
-
-        nodes[name] = node
-
-    for node in nodes.values():
-        parent = node['parent']
-
-        if parent == '' or parent is None:
-            tree.append(node)
-        elif parent in nodes:
-            nodes[parent]['children'].append(node)
-        else:
-            tree.append(node)
-
-    return tree
-
-# Helper function for loading categories in create auction
-def flatten_categories_for_select(nodes, result=None, level=0):
+# Helper function for loading categories in dropdown - used in create and edit auction for sellers
+def build_category_dropdown(parent_category=None, level=0, result=None):
     if result is None:
         result = []
 
-    for node in nodes:
-        # usually sellers should not list directly under root "All"
-        if node['name'].lower() != 'all':
+    rows = get_categories(parent_category)
+
+    for row in rows:
+        category_name = row['category_name']
+        # Skip 'root' category
+        if category_name != "Root":
             result.append({
-                'name': node['name'],
-                'display_name': ('-- ' * level) + node['name']
+                "name": category_name,
+                "display_name": ("-" * level) + category_name,
             })
 
-        if node['children']:
-            flatten_categories_for_select(node['children'], result, level + 1)
+        build_category_dropdown(category_name, level + 1, result)
 
     return result
-
 
 @app.route('/add_category', methods=['GET', 'POST'])
 def add_category():

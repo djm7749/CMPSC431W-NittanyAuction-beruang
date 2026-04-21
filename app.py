@@ -377,6 +377,9 @@ def view_listing(listing_id):
             flash("You must be logged in")
             return redirect(url_for('login'))
         
+        listing = get_listing(listing_id)
+        seller = listing["Seller_Email"]
+        
         # Get bid price from form and convert to float
         bid_price = float(request.form['bid_price'])
                 
@@ -384,15 +387,35 @@ def view_listing(listing_id):
         highest_bid = get_highest_bid(listing_id)
 
         highest_bidder = get_highest_bidder(listing_id)
-
+        
+        # 1. Check if bidder is the seller
+        if bidder == seller:
+            flash("Seller cannot bid on their own listing")
+            return render_template('view-listing.html', listing=listing, bids=get_bids_history(listing_id), highest_bid=highest_bid, active_role=session.get('active_role'), highest_bidder=highest_bidder)
+        
+        # 2. Check if bidder bid in two consecutive bids
+        if bidder == highest_bidder:
+            flash("Bidder cannot bid in two consecutive bids")
+            return render_template('view-listing.html', listing=listing, bids=get_bids_history(listing_id), highest_bid=highest_bid, active_role=session.get('active_role'), highest_bidder=highest_bidder)
+        
+        # 3. Check if bid is higher than reserve price and current highest bid
         if highest_bid is not None and bid_price <= highest_bid:
+
+            # 3(a)Check if bid is higher than reserve price
             if bid_price < reserve_price:
-                flash("Bid must be higher than reserve price of $" + str(reserve_price))
+                flash("Bid must be higher than reserve price")
                 return render_template('view-listing.html', listing=listing, bids=get_bids_history(listing_id), highest_bid=highest_bid, active_role=session.get('active_role'), highest_bidder=highest_bidder)
             
-            
+            # 3(b) Bid is higher than reserve price but not higher than current highest bid
             flash("Bid must be higher than the latest bid")
             return render_template('view-listing.html', listing=listing, bids=get_bids_history(listing_id), highest_bid=highest_bid, active_role=session.get('active_role'), highest_bidder=highest_bidder  )
+        
+        # 4.check if max bids has been reached
+        max_bids = listing["Max_Bids"]
+        bid_count = get_bid_count(seller, listing_id)
+        if bid_count >= max_bids:
+            flash("Maximum number of bids reached for this listing")
+            return render_template('view-listing.html', listing=listing, bids=get_bids_history(listing_id), highest_bid=highest_bid, active_role=session.get('active_role'), highest_bidder=highest_bidder)
             
         place_bid(listing_id, bidder, bid_price)
         return render_template('view-listing.html', listing=listing, bids=get_bids_history(listing_id), highest_bid=highest_bid, active_role=session.get('active_role'), highest_bidder=highest_bidder)

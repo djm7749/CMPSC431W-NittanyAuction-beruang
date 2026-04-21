@@ -6,49 +6,12 @@
 <div class="container mt-4 bg-light p-4 rounded">
     <h2>Listing Details</h2>
 
-    <div class="form-group text-left">
-        <label for="name">Item Name</label>
-        <input type="text" class="form-control" id="name" name="name"
-               value="{{ listing['Product_Name'] }}"
-               {% if edit_blocked %}readonly{% endif %}>
-    </div>
-    <div class="form-group text-left">
-        <label for="description">Description</label>
-        <textarea class="form-control" id="description" name="description" rows="3"
-                  {% if edit_blocked %}readonly{% endif %}>{{ listing['Product_Description'] }}</textarea>
-    </div>
-    <div class="form-group text-left">
-        <label for="category">Category</label>
-        <select class="form-control"
-                id="category"
-                name="category"
-                {% if edit_blocked %}disabled{% endif %}>
-            {% for category in categories %}
-                <option value="{{ category.name }}"
-                    {% if category.name == listing['Category'] %}selected{% endif %}>
-                    {{ category.display_name }}
-                </option>
-            {% endfor %}
-        </select>
-    </div>
-    <div class="form-group text-left">
-        <label for="reserve_price">Reserve Price</label>
-        <input type="number" step="0.01" class="form-control" id="reserve_price" name="reserve_price"
-               value="{{ listing['Reserve_Price'] }}"
-               {% if edit_blocked %}readonly{% endif %}>
-    </div>
-    <div class="form-group text-left">
-        <label for="quantity">Quantity</label>
-        <input type="number" class="form-control" id="quantity" name="quantity"
-               value="{{ listing['Quantity'] }}"
-               {% if edit_blocked %}readonly{% endif %}>
-    </div>
-    <div class="form-group text-left">
-        <label for="max_bids">Max Bids</label>
-        <input type="number" class="form-control" id="max_bids" name="max_bids"
-               value="{{ listing['Max_bids'] }}"
-               {% if edit_blocked %}readonly{% endif %}>
-    </div>
+    {% if edit_message %}
+            <div class="alert alert-warning">
+                {{ edit_message }}
+            </div>
+    {% endif %}
+
     <p><strong>Status:</strong>
         {% if listing['Status'] == 1 %}
             <span class="badge badge-success">Active</span>
@@ -60,24 +23,102 @@
     </p>
     <p><strong>Bids Placed:</strong> {{ bid_count }}</p>
 
-    {% if edit_blocked %}
-        <div class="alert alert-warning">
-            {{ edit_message }}
-        </div>
-        <button class="btn btn-primary" disabled>Save Changes</button>
-    {% else %}
-        <a href="#" class="btn btn-primary">Save Changes</a>
+    {% if removal_info %}
+        <p><strong>Remaining Bids:</strong> {{ removal_info['Remaining_Bids'] }}</p>
+        <p><strong>Removal Reason:</strong> {{ removal_info['Removal_Reason'] }}</p>
     {% endif %}
+
+    <form method="POST" action="{{ url_for('update_listing', listing_id=listing['Listing_ID']) }}">
+    <div class="row">
+
+        <div class="col-md-6">
+            <div class="form-group text-left">
+                <label for="name">Item Name</label>
+                <input type="text" class="form-control" id="name" name="name"
+                       value="{{ listing['Product_Name'] }}"
+                       {% if edit_blocked %}readonly{% endif %}>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="form-group text-left">
+                <label for="category">Category</label>
+                <select class="form-control"
+                        id="category"
+                        name="category"
+                        {% if edit_blocked %}disabled{% endif %}>
+                    {% for category in categories %}
+                        <option value="{{ category.name }}"
+                            {% if category.name == listing['Category'] %}selected{% endif %}>
+                            {{ category.display_name }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="row">
+
+        <div class="col-md-12">
+            <div class="form-group text-left">
+                <label for="description">Description</label>
+                <textarea class="form-control" id="description" name="description" rows="3"
+                          {% if edit_blocked %}readonly{% endif %}>{{ listing['Product_Description'] }}</textarea>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="row mt-3">
+
+        <div class="col-md-4">
+            <div class="form-group text-left">
+                <label for="reserve_price">Reserve Price</label>
+                <input type="number" step="0.01" class="form-control" id="reserve_price" name="reserve_price"
+                       value="{{ reserve_price_value }}"
+                       {% if edit_blocked %}readonly{% endif %}>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="form-group text-left">
+                <label for="quantity">Quantity</label>
+                <input type="number" class="form-control" id="quantity" name="quantity"
+                       value="{{ listing['Quantity'] }}"
+                       {% if edit_blocked %}readonly{% endif %}>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="form-group text-left">
+                <label for="max_bids">Max Bids</label>
+                <input type="number" class="form-control" id="max_bids" name="max_bids"
+                       value="{{ listing['Max_bids'] }}"
+                       {% if edit_blocked %}readonly{% endif %}>
+            </div>
+        </div>
+
+    </div>
+        <button type="submit"
+                class="btn btn-primary"
+                {% if edit_blocked %}disabled{% endif %}>
+            Save Changes
+        </button>
+
+        <a href="{{ url_for('seller_dashboard') }}" class="btn btn-secondary">Cancel</a>
+    </form>
 
     {% if listing['Status'] == 1 %}
         <hr>
         <h4>Take Listing Off Market</h4>
-        <form method="POST" action="{#  #}">
+        <form method="POST" action="{{url_for('remove_listing', listing_id=listing['Listing_ID'])}}">
             <div class="form-group">
                 <label for="removal_reason">Reason for removal</label>
                 <textarea name="removal_reason" id="removal_reason" class="form-control" rows="3" required></textarea>
             </div>
-            <button type="submit" class="btn btn-secondary">Mark Inactive</button>
+            <button type="submit" class="btn btn-danger">Remove</button>
         </form>
     {% endif %}
 </div>

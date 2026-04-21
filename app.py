@@ -21,6 +21,10 @@ init_db()
 def index():
     return render_template('index.html')
 
+@app.route('/logout')
+def logout():
+    session.clear()
+    return redirect(url_for('login'))
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -154,7 +158,52 @@ def seller_dashboard():
 
 @app.route('/helpdesk_dashboard')
 def helpdesk_dashboard():
-    return render_template('helpdesk.html')
+
+    if 'user_email' not in session:
+        return redirect(url_for('login'))
+
+    email = session['user_email']
+
+    conn = db_connect()
+    cur = conn.cursor()
+
+    #Requests board
+    if email == "helpdeskteam@lsu.edu":
+        cur.execute("""
+            SELECT *
+            FROM Requests
+            ORDER BY request_status ASC, request_id DESC
+        """)
+
+    else:
+        cur.execute("""
+            SELECT *
+            FROM Requests
+            WHERE helpdesk_staff_email = ?
+                OR helpdesk_staff_email = ?
+            ORDER BY request_status ASC, request_id DESC
+        """, (email, "helpdeskteam@lsu.edu"))
+
+    requests = cur.fetchall()
+
+    #Vendors management
+    cur.execute("""
+        SELECT Email,
+               Business_Name,
+               Customer_Service_Phone_Number
+        FROM Local_Vendors
+        ORDER BY Business_Name
+    """)
+
+    vendors = cur.fetchall()
+
+    conn.close()
+
+    return render_template(
+        "helpdesk.html",
+        requests=requests,
+        vendors=vendors
+    )
 
 
 @app.route('/seller_dashboard/create_auction', methods=['GET', 'POST'])
@@ -398,6 +447,291 @@ def flatten_categories_for_select(nodes, result=None, level=0):
             flatten_categories_for_select(node['children'], result, level + 1)
 
     return result
+
+
+@app.route('/add_category', methods=['GET', 'POST'])
+def add_category():
+
+    # helpdesk access only
+    if 'user_email' not in session:
+        return redirect(url_for('login'))
+
+    if session.get('role') != 'Helpdesk':
+        return redirect(url_for('login'))
+
+    conn = db_connect()
+    cur = conn.cursor()
+
+    # load existing categories
+    cur.execute("""
+        SELECT *
+        FROM Categories
+        ORDER BY category_name
+    """)
+
+    categories = cur.fetchall()
+
+
+    # submit new categories
+    if request.method == 'POST':
+
+        new_name = request.form['category_name'].strip()
+        parent = request.form['parent_category'].strip()
+
+        if new_name:
+
+            # avoid duplicates
+            cur.execute("""
+                SELECT *
+                FROM Categories
+                WHERE category_name = ?
+            """, (new_name,))
+
+            exists = cur.fetchone()
+
+            if not exists:
+
+                cur.execute("""
+                    INSERT INTO Categories
+                    (
+                        category_name,
+                        parent_category
+                    )
+                    VALUES (?, ?)
+                """, (
+                    new_name,
+                    parent if parent else None
+                ))
+
+                conn.commit()
+
+        conn.close()
+
+        return redirect(url_for('helpdesk_dashboard'))
+
+    conn.close()
+
+    return render_template(
+        "add_category.html",
+        categories=categories
+    )
+
+@app.route('/change_user_id/<int:request_id>', methods=['GET', 'POST'])
+def change_user_id(request_id):
+
+    #helpdesk access only
+    if 'user_email' not in session:
+        return redirect(url_for('login'))
+
+    if session.get('role') != 'Helpdesk':
+        return redirect(url_for('login'))
+
+    conn = db_connect()
+    cur = conn.cursor()
+
+    # LOAD REQUEST
+    cur.execute("""
+        SELECT *
+        FROM Requests
+        WHERE request_id = ?
+    """, (request_id,))
+
+    req = cur.fetchone()
+
+    if not req:
+        conn.close()
+        return redirect(url_for('helpdesk_dashboard'))
+
+    # SUBMIT CHANGE
+    if request.method == 'POST':
+
+        old_email = request.form['old_email'].strip().lower()
+        new_email = request.form['new_email'].strip().lower()
+
+        # duplicate check
+        cur.execute("""
+            SELECT *
+            FROM Users
+            WHERE email = ?
+        """, (new_email,))
+
+        if cur.fetchone():
+            conn.close()
+            return render_template(
+                "change_id.html",
+                req=req,
+                error="New ID already exists."
+            )
+
+
+        # UPDATE ALL TABLES
+        tables = [
+
+            ("Users", "email"),
+            ("Bidders", "email"),
+            ("Sellers", "email"),
+            ("Helpdesk", "email"),
+            ("Local_Vendors", "Email"),
+
+            ("Auction_Listings", "Seller_Email"),
+
+            ("Credit_Cards", "Owner_email"),
+
+            ("Requests", "sender_email"),
+            ("Requests", "helpdesk_staff_email"),
+
+            ("Rating", "Bidder_Email"),
+            ("Rating", "Seller_Email"),
+
+            ("Bids", "Bidder_Email"),
+            ("Bids", "Seller_Email")
+
+        ]
+
+        for table, column in tables:
+
+            cur.execute(f"""
+                UPDATE {table}
+                SET {column} = ?
+                WHERE {column} = ?
+            """, (
+                new_email,
+                old_email
+            ))
+
+        # mark request completed
+        cur.execute("""
+            UPDATE Requests
+            SET request_status = 1
+            WHERE request_id = ?
+        """, (request_id,))
+
+        conn.commit()
+        conn.close()
+
+        return redirect(url_for('helpdesk_dashboard'))
+
+    conn.close()
+
+    return render_template(
+        "change_id.html",
+        req=req
+    )
+
+@app.route('/approve_request/<int:request_id>')
+def approve_request(request_id):
+
+    if 'user_email' not in session:
+        return redirect(url_for('login'))
+
+    helpdesk_email = session['user_email']
+
+    conn = db_connect()
+    cur = conn.cursor()
+
+    # get request
+    cur.execute("""
+        SELECT *
+        FROM Requests
+        WHERE request_id = ?
+    """, (request_id,))
+
+    req = cur.fetchone()
+
+    if not req:
+        conn.close()
+        return redirect(url_for('helpdesk_dashboard'))
+
+    sender_email = req["sender_email"]
+    request_type = req["request_type"]
+
+    # Seller Application approval
+    if request_type == "SellerApplication":
+
+        # already seller?
+        cur.execute("""
+            SELECT *
+            FROM Sellers
+            WHERE Email = ?
+        """, (sender_email,))
+
+        if not cur.fetchone():
+
+            cur.execute("""
+                INSERT INTO Sellers
+                (Email, bank_routing_number, bank_account_number, balance)
+                VALUES (?, ?, ?, ?)
+            """, (
+                sender_email,
+                None,
+                None,
+                0
+            ))
+
+    # mark request completed
+    cur.execute("""
+        UPDATE Requests
+        SET request_status = 1,
+        WHERE request_id = ?
+    """, (
+        request_id
+    ))
+
+    conn.commit()
+    conn.close()
+
+    return redirect(url_for('helpdesk_dashboard'))
+
+@app.route('/remove_vendor/<vendor_email>')
+def remove_vendor(vendor_email):
+
+    # ONLY HELPDESK CAN USE THIS
+    if 'user_email' not in session:
+        return redirect(url_for('login'))
+
+    if session.get('role') != 'Helpdesk':
+        return redirect(url_for('login'))
+
+    conn = db_connect()
+    cur = conn.cursor()
+
+    # VERIFY THIS IS A LOCAL VENDOR
+    cur.execute("""
+        SELECT *
+        FROM Local_Vendors
+        WHERE Email = ?
+    """, (vendor_email,))
+
+    vendor = cur.fetchone()
+
+    if not vendor:
+        conn.close()
+        return redirect(url_for('helpdesk_dashboard'))
+
+    # REMOVE ALL THEIR PRODUCTS
+    cur.execute("""
+        DELETE FROM Auction_Listings
+        WHERE Seller_Email = ?
+    """, (vendor_email,))
+
+    # optional cleanup bids tied to listings
+    cur.execute("""
+        DELETE FROM Bids
+        WHERE Seller_Email = ?
+    """, (vendor_email,))
+
+
+    # REMOVE LOCAL VENDOR RECORD
+    cur.execute("""
+        DELETE FROM Local_Vendors
+        WHERE Email = ?
+    """, (vendor_email,))
+
+    conn.commit()
+    conn.close()
+
+    return redirect(url_for('helpdesk_dashboard'))
+
 
 if __name__ == '__main__':
     app.run(debug=True)         # Set debug=True for development to allow auto-reloading 

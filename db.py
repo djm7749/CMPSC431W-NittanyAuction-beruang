@@ -127,7 +127,7 @@ def update_bidder(first_name, last_name, age, major, email):
     conn.close()
 
 
-def get_active_auctions(limit=8):
+def get_bidder_auctions(bidder_email):
     conn = db_connect()
     cur = conn.cursor()
 
@@ -135,16 +135,18 @@ def get_active_auctions(limit=8):
         SELECT 
             a.Listing_ID,
             a.Product_Name AS name,
-            (
-                SELECT MAX(Bid_Price)
-                FROM Bids b
-                WHERE b.Listing_ID = a.Listing_ID
-            ) AS price
-        FROM Auction_Listings a
-        WHERE a.status = 1
-        ORDER BY a.Listing_ID
-        LIMIT ?
-    """, (limit,))
+            
+
+            MAX(b.Bid_Price) AS highest_bid
+
+        FROM Auction_Listings a, bids
+        JOIN Bids b 
+            ON a.Listing_ID = b.Listing_ID
+
+        WHERE b.Bidder_Email = ?
+
+        GROUP BY a.Listing_ID
+    """, (bidder_email,))
 
     rows = cur.fetchall()
     conn.close()
@@ -577,37 +579,37 @@ def get_user_credit_cards(email):
 
 
 
-def get_bidder_auctions(bidder_email):
-    conn = db_connect()
-    cur = conn.cursor()
+# def get_bidder_auctions(bidder_email):
+#     conn = db_connect()
+#     cur = conn.cursor()
 
-    cur.execute("""
-        SELECT 
-            a.Listing_ID,
-            a.Product_Name AS name,
-            a.Category,
-            a.Seller_Email,
+#     cur.execute("""
+#         SELECT 
+#             a.Listing_ID,
+#             a.Product_Name AS name,
+#             a.Category,
+#             a.Seller_Email,
 
-            (SELECT MAX(Bid_Price)
-             FROM Bids b1
-             WHERE b1.Listing_ID = a.Listing_ID) AS highest_bid,
+#             (SELECT MAX(Bid_Price)
+#              FROM Bids b1
+#              WHERE b1.Listing_ID = a.Listing_ID) AS highest_bid,
 
-            (SELECT Bidder_Email
-             FROM Bids b2
-             WHERE b2.Listing_ID = a.Listing_ID
-             ORDER BY b2.Bid_Price DESC
-             LIMIT 1) AS highest_bidder
+#             (SELECT Bidder_Email
+#              FROM Bids b2
+#              WHERE b2.Listing_ID = a.Listing_ID
+#              ORDER BY b2.Bid_Price DESC
+#              LIMIT 1) AS highest_bidder
 
-        FROM Auction_Listings a
-        WHERE a.Listing_ID IN (
-            SELECT Listing_ID
-            FROM Bids
-            WHERE Bidder_Email = ?
-        )
-        GROUP BY a.Listing_ID
-    """, (bidder_email,))
+#         FROM Auction_Listings a
+#         WHERE a.Listing_ID IN (
+#             SELECT Listing_ID
+#             FROM Bids
+#             WHERE Bidder_Email = ?
+#         )
+#         GROUP BY a.Listing_ID
+#     """, (bidder_email,))
 
-    rows = cur.fetchall()
-    conn.close()
-    return rows
+#     rows = cur.fetchall()
+#     conn.close()
+#     return rows
 

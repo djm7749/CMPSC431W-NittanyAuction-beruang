@@ -109,19 +109,30 @@ def signup():
 
     return render_template('signup.html')
 
-from db import get_active_auctions
+from db import get_bidder_auctions
 
 @app.route('/bidder_dashboard')
 def bidder_dashboard():
 
     active_role = session.get('active_role')
-    auction_rows = get_active_auctions()
+    bidder = session['user_email']
+    auction_rows = get_bidder_auctions(bidder)
 
     items = []
-    for row in auction_rows:
+
+    for auction in auction_rows:
+        # status_map = {
+        #     1: "Active",
+        #     0: "Inactive",
+        #     2: "Sold"
+        # }
+
+        print(auction.keys())
+
         items.append({
-            "name": row["name"],
-            "price": row["price"] if row["price"] else 0,
+            "name": auction["name"],
+            "price": auction["highest_bid"] if auction["highest_bid"] else 0,
+            # "status": status_map.get(auction["status"], "Unknown"),
             "image": "default-auction.jpg"
         })
 

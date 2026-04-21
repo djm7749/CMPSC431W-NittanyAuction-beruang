@@ -235,7 +235,10 @@ def seller_listing_detail(listing_id):
 
     # retrieve auction listing by id
     listing = get_auction_listing_by_id(seller_email,listing_id)
+    # build categories for dropdown
     category_options = build_category_dropdown(None)
+    # Initialize removal info
+    removal_info = None
 
     if not listing:
         return "Listing not found.", 404

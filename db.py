@@ -270,13 +270,24 @@ def create_auction_listing(seller_email,auction_title,name,description,category,
     conn = db_connect()
     cur = conn.cursor()
 
+    # create a new listing id
+    # idea: get the max value of the listing id for that seller and increment by 1
+    cur.execute("""
+                SELECT MAX(Listing_ID) AS max_id
+                FROM Auction_Listings
+                WHERE Seller_Email = ?
+                """, (seller_email,))
+
+    row = cur.fetchone()
+    listing_id = (row["max_id"] + 1) if row["max_id"] is not None else 1
+
     cur.execute("""
                 INSERT INTO Auction_Listings
-                (Seller_Email,Auction_Title,Product_Name,Product_Description,Category,
+                (Seller_Email,Listing_ID,Auction_Title,Product_Name,Product_Description,Category,
                  Reserve_Price,Max_bids,Quantity,Status)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?,?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?,?,?)
                 """, (
-                    seller_email,auction_title,name,description,category,
+                    seller_email,listing_id,auction_title,name,description,category,
                     reserve_price,max_bids,quantity,1
                 ))
 

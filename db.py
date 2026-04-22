@@ -169,6 +169,8 @@ def get_auction_listing(email, status_filter):
         filter_query = "AND Status = 0"
     elif status_filter == "sold":
         filter_query = "AND Status = 2"
+    elif status_filter == "pending payment":
+        filter_query = "AND Status = 3"
     else:
         filter_query = ""
 
@@ -791,6 +793,19 @@ def get_bidder_display_name(bidder_email):
             return full_name
 
     return bidder_email
+
+def mark_listing_pending_payment(seller_email, listing_id):
+    conn = db_connect()
+    cur = conn.cursor()
+
+    cur.execute("""
+        UPDATE Auction_Listings
+        SET Status = 3
+        WHERE Seller_Email = ? AND Listing_ID = ?
+    """, (seller_email, listing_id))
+
+    conn.commit()
+    conn.close()
 
 
 def get_seller_rating(seller_email):

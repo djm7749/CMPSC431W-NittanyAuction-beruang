@@ -134,24 +134,24 @@ Local Vendors
 
 Make sure you have Python installed. Then install required packages:
 
-pip install flask pandas
+  ```pip install flask pandas```
 
 **How to Run the Application**
 
 1. Open terminal in the project folder
 2. Run the application:
+   
+   ```python app.py```
 
-    - python app.py
-
-3. Open your browser and go to:
-
-    - http://127.0.0.1:5000 (or http://localhost:5000)
+4. Open your browser and go to:
+   
+   ```http://127.0.0.1:5000``` (or http://localhost:5000)
 
 **Project Structure**
 
-``` app.py – main Flask application
-init_db.py – database creation and population script
-auction.db – SQLite database (created automatically)
-templates/ – HTML pages
-NittanyAuctionDataset_v1/ – CSV dataset files 
+1. app.py – main Flask application
+2. init_db.py – database creation and population script
+3. auction.db – SQLite database (created automatically)
+4. templates/ – HTML pages
+5. NittanyAuctionDataset_v1/ – CSV dataset files 
 

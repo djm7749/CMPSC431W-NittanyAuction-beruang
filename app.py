@@ -117,20 +117,48 @@ def signup():
 
     return render_template('signup.html')
 
-from db import get_active_auctions
+from db import get_bidder_auctions
 
 @app.route('/bidder_dashboard')
 def bidder_dashboard():
 
     active_role = session.get('active_role')
-    auction_rows = get_active_auctions()
+    bidder = session['user_email']
+    auction_rows = get_bidder_auctions(bidder)
 
     items = []
-    for row in auction_rows:
+
+
+
+    for auction in auction_rows:
+        # listing = get_auction_listing_by_id(bidder, auction["Listing_ID"])
+        listing = get_listing(auction["Listing_ID"])
+
+        bid = get_bids_history(auction["Listing_ID"])
+        bid_count = len(bid)
+        # bid_count = get_bid_count(bidder, auction["Listing_ID"])
+
+        if listing:
+            status = listing["Status"]
+        else:
+            status = "Unknown"
+
+        highest_bidder = auction["Bidder_Email"] if auction["Bidder_Email"] else "No bids yet"
+
+        if highest_bidder == bidder:
+            highest_bidder = "You"
+
+
+
         items.append({
-            "name": row["name"],
-            "price": row["price"] if row["price"] else 0,
-            "image": "default-auction.jpg"
+            "listing_id": auction["Listing_ID"],
+            "name": auction["name"],
+            "price": auction["Bid_Price"] if auction["Bid_Price"] else 0,
+            "highest_bidder": highest_bidder,
+            "status": status,
+            "image": "default-auction.jpg",
+            "max_bids": listing["Max_bids"],
+            "bid_count": bid_count
         })
 
     return render_template('bidder.html', items=items, active_role=active_role)

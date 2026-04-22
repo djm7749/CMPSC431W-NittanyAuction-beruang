@@ -134,7 +134,7 @@ Local Vendors
 
 Make sure you have Python installed. Then install required packages:
 
-pip install flask pandas
+  ```pip install flask pandas```
 
 **How to Run the Application**
 

@@ -278,11 +278,10 @@ def browse():
     selected_category = request.args.get('category', '').strip()
     # category_path = get_category_path(selected_category) if selected_category else []
     category_path = ["All Categories"]
-    if selected_category=="All Categories":
+    if selected_category == "All Categories":
         selected_category = None
     else:
         category_path += get_category_path(selected_category)
-
 
     # if category:
     #     categories = get_categories(category)
@@ -292,7 +291,6 @@ def browse():
     categories = get_categories(selected_category if selected_category else None)
 
     auction_rows, total_items = get_browse_items(q, per_page, offset, selected_category)
-    
 
     # Convert data
     items = []
@@ -428,7 +426,6 @@ def switch_role():
 @app.route('/view_listing/<int:listing_id>', methods=['GET', 'POST'])
 def view_listing(listing_id):
 
-    win = False
     # retrieve auction listing
     listing = get_listing(listing_id)
     if not listing:
@@ -503,6 +500,7 @@ def view_listing(listing_id):
         
 
         place_bid(listing_id, bidder, bid_price)
+        new_bid_count = bid_count + 1
 
         # Get updated highest bid and bidder
         highest_bid = get_highest_bid(listing_id)
@@ -510,13 +508,10 @@ def view_listing(listing_id):
         bids = get_bids_history(listing_id)
         
         # 7. win the auction
-        if bid_count == max_bids:
-            win = True
-            return render_template('view-listing.html', listing=listing, bids=get_bids_history(listing_id), highest_bid=highest_bid, active_role=session.get('active_role'), highest_bidder=highest_bidder)
+        if new_bid_count == max_bids:
+            return redirect(url_for('payment', seller_email=seller, listing_id=listing_id))
             # flash("Congratulations! You have won the auction!")
 
-
-        
         return render_template('view-listing.html', listing=listing, bids=get_bids_history(listing_id), highest_bid=highest_bid, active_role=session.get('active_role'), highest_bidder=highest_bidder)
 
     # Get the highest bid and bidder for table display
@@ -528,7 +523,116 @@ def view_listing(listing_id):
         highest_bid = bids[0]['Bid_Price']
         highest_bidder = bids[0]['Bidder_email']
 
-    return render_template('view-listing.html', listing=listing, bids=get_bids_history(listing_id), highest_bid=highest_bid, active_role=session.get('active_role'), highest_bidder=highest_bidder, win=win)
+    return render_template('view-listing.html', listing=listing, bids=get_bids_history(listing_id), highest_bid=highest_bid, active_role=session.get('active_role'), highest_bidder=highest_bidder)
+
+@app.route('/payment/<seller_email>/<int:listing_id>')
+def payment(seller_email, listing_id):
+    user_email = session.get('user_email')
+    seller_name = get_seller_display_name(seller_email)
+
+    # retrieve listing
+    listing = get_auction_listing_by_id(seller_email,listing_id)
+    if not listing:
+        return "Listing not found",404
+
+    # retrieve user credit cards
+    cards = get_user_credit_cards(user_email)
+    selected_card = cards[0]['credit_card_num'] if cards else None
+
+    # retrieve the final (highest) bid
+    final_price = get_highest_bid(listing_id)
+    
+    # initialization form action
+    show_add_form = request.args.get('show_add_form', '0') == '1'
+
+    return render_template(
+        'payment.html',
+        listing=listing,
+        seller_name=seller_name,
+        cards=cards,
+        final_price=final_price,
+        show_add_form=show_add_form,
+        selected_card=selected_card,
+        error=None
+    )
+
+@app.route('/payment/<seller_email>/<int:listing_id>/save_card', methods=['POST'])
+def save_card(seller_email, listing_id):
+    user_email = session.get('user_email')
+    seller_name = get_seller_display_name(seller_email)
+
+    listing = get_auction_listing_by_id(seller_email, listing_id)
+    if not listing:
+        return "Listing not found", 404
+
+    cards = get_user_credit_cards(user_email)
+    selected_card = cards[0]['credit_card_num'] if cards else None
+
+    final_price = get_highest_bid(listing_id)
+
+    credit_card_num = request.form.get('credit_card_num', '').strip()
+    card_type = request.form.get('card_type', '').strip()
+    expire_month = request.form.get('expire_month', '').strip()
+    expire_year = request.form.get('expire_year', '').strip()
+    security_code = request.form.get('security_code', '').strip()
+
+    # Input validation
+    error = None
+
+    if not credit_card_num or not card_type or not expire_month or not expire_year or not security_code:
+        error = "Please fill in all credit card fields."
+
+    elif not expire_month.isdigit():
+        error = "Expire month must be a number."
+
+    elif int(expire_month) < 1 or int(expire_month) > 12:
+        error = "Expire month must be between 1 and 12."
+
+    elif not expire_year.isdigit():
+        error = "Expire year must be a number."
+
+    elif not security_code.isdigit():
+        error = "Security code must contain only digits."
+
+    if error:
+        return render_template(
+            'payment.html',
+            listing=listing,
+            seller_name=seller_name,
+            cards=cards,
+            final_price=final_price,
+            show_add_form=True,
+            selected_card=selected_card,
+            error=error
+        )
+
+    create_user_credit_card(
+        credit_card=credit_card_num,
+        card_type=card_type,
+        expire_month=int(expire_month),
+        expire_year=int(expire_year),
+        security_code=security_code,
+        owner_email=user_email
+    )
+
+    return redirect(url_for('payment', seller_email=seller_email, listing_id=listing_id))
+
+@app.route('/payment/<seller_email>/<int:listing_id>/submit', methods=['POST'])
+def submit_payment(seller_email, listing_id):
+    user_email = session.get('user_email')
+
+    final_price = get_highest_bid(listing_id)
+
+    create_transaction(
+        seller_email=seller_email,
+        listing_id=listing_id,
+        bidder_email=user_email,
+        payment_amount=final_price
+    )
+
+    mark_listing_sold(seller_email, listing_id)
+
+    return redirect(url_for('bidder_dashboard'))
 
 
 # Helper Function : Make a hierarchical tree from category database

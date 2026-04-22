@@ -1,0 +1,149 @@
+{% extends 'layout.html' %}
+
+{% block title %}Payment{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="bg-light p-4 rounded">
+        <div class="alert alert-success text-center">
+             <strong>Congratulations!</strong> You won this auction.
+        </div>
+        <h2 class="mb-4">Complete Payment</h2>
+
+        <div class="mb-4">
+            <h4>{{ listing['Product_Name'] }}</h4>
+            <p><strong>Listing ID:</strong> {{ listing['Listing_ID'] }}</p>
+            <p><strong>Seller:</strong> {{ seller_name }}</p>
+            <p><strong>Amount to Pay:</strong> ${{ final_price }}</p>
+        </div>
+
+        {% if error %}
+        <div class="alert alert-danger">
+            {{ error }}
+        </div>
+        {% endif %}
+
+        <div class="border rounded bg-white p-4 mb-4">
+            <h3 class="mb-4">Choose a Saved Card</h3>
+
+            {% if cards %}
+            <form method="POST" action="{{ url_for('submit_payment', seller_email=listing['Seller_Email'], listing_id=listing['Listing_ID']) }}">
+                <div class="form-group mb-3">
+                    <label for="selected_card"><strong>Stored Cards</strong></label>
+                    <select class="form-control" id="selected_card" name="selected_card">
+                        {% for card in cards %}
+                        <option value="{{ card['credit_card_num'] }}"
+                            {% if selected_card == card['credit_card_num'] %}selected{% endif %}>
+                            {{ card['card_type'] }} ending in {{ card['credit_card_num'][-4:] }}
+                            (Exp: {{ card['expire_month'] }}/{{ card['expire_year'] }})
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="mb-3">
+                    <a href="{{ url_for('payment', seller_email=listing['Seller_Email'], listing_id=listing['Listing_ID'], show_add_form=1) }}"
+                       class="btn btn-primary">
+                        Add New Card
+                    </a>
+                </div>
+
+                <div class="d-flex justify-content-end">
+                    <button type="submit"  class="btn btn-success">
+                        Submit Payment
+                    </button>
+                </div>
+            </form>
+            {% else %}
+            <p class="text-muted mb-3">No stored cards found.</p>
+            <a href="{{ url_for('payment', seller_email=listing['Seller_Email'], listing_id=listing['Listing_ID'], show_add_form=1) }}"
+               class="btn btn-primary">
+                Add New Card
+            </a>
+            {% endif %}
+        </div>
+
+        {% if show_add_form %}
+        <div class="border rounded bg-white p-4">
+            <h3 class="mb-4">Add New Card</h3>
+
+            <form method="POST" action="{{ url_for('save_card', seller_email=listing['Seller_Email'], listing_id=listing['Listing_ID']) }}">
+
+                <div class="form-group mb-3">
+                    <label for="credit_card_num">Card Number</label>
+                    <input
+                        type="text"
+                        class="form-control"
+                        id="credit_card_num"
+                        name="credit_card_num"
+                        value=""
+                        required
+                    >
+                </div>
+
+                <div class="form-group mb-3">
+                    <label for="card_type">Card Type</label>
+                    <select class="form-control" id="card_type" name="card_type">
+                        <option value="">Select card type</option>
+                        <option value="Visa" >Visa</option>
+                        <option value="Master">Master</option>
+                        <option value="Discover" >Discover</option>
+                        <option value="American Express" >American Express</option>
+                    </select>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group col-md-4 mb-3">
+                        <label for="expire_month">Expire Month</label>
+                        <input
+                            type="number"
+                            class="form-control"
+                            id="expire_month"
+                            name="expire_month"
+                            min="1"
+                            max="12"
+                            value=""
+                            required
+                        >
+                    </div>
+
+                    <div class="form-group col-md-4 mb-3">
+                        <label for="expire_year">Expire Year</label>
+                        <input
+                            type="number"
+                            class="form-control"
+                            id="expire_year"
+                            name="expire_year"
+                            value=""
+                            required
+                        >
+                    </div>
+
+                    <div class="form-group col-md-4 mb-3">
+                        <label for="security_code">Security Code</label>
+                        <input
+                            type="number"
+                            class="form-control"
+                            id="security_code"
+                            name="security_code"
+                            value=""
+                            required
+                        >
+                    </div>
+                </div>
+
+                <div class="d-flex gap-2 mt-3">
+                    <button type="submit" class="btn btn-success">
+                        Save New Card
+                    </button>
+                    <a href="{{ url_for('payment', seller_email=listing['Seller_Email'], listing_id=listing['Listing_ID']) }}"
+                       class="btn btn-secondary">
+                        Cancel
+                    </a>
+                </div>
+            </form>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

@@ -43,13 +43,9 @@
                     <input type="number" name="bid_price" step="1" min="1"
                         class="form-control" placeholder="Enter your bid" required>
                 </div>
-                {% if win %}
-                <div class="alert alert-success">
-                    <button type="submit" class="btn btn-primary mb-3">Place Bid</button>
-                </div>
-                {% else %}
+
                 <button type="submit" class="btn btn-primary mb-3">Place Bid</button>
-                {% endif %}
+
             </form>
             {% if error %}
             <div class="alert alert-danger mt-2">

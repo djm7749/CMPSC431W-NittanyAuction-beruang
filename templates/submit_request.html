@@ -1,0 +1,57 @@
+{% extends 'layout.html' %}
+
+{% block title %} Submit Requests {% endblock %}
+
+{% block content %}
+
+    <!--Main Content-->
+    <div class="container mt-4">
+
+        <!-- Page Header -->
+        <div class="bg-light p-4 rounded mb-4">
+            <h2>Helpdesk Requests</h2>
+            <p class="text-muted mb-0">
+                Submit requests for account changes or system features
+            </p>
+        </div>
+        <!-- Select Request Type-->
+        <div class="bg-light p-4 rounded mb-4">
+            <form action="/create_request" method="POST" class="mt-2">
+                <div class="form-group">
+                    <label for="request_type">Request Type</label>
+                    <select class="form-control" id="request_type" name="request_type" required>
+                        <option value="" selected disabled>Choose a request type...</option>
+                        {% if "Seller" in roles%}
+                            <option value="MarketAnalysis">Market Analysis</option>
+                            <option value="AddCategory">Add Category</option>
+                        {% else %}
+                        <option value="ApplySeller">Apply To Be A Seller</option>
+                        {% endif %}
+                        <option value="ChangeID">Change User ID (email)</option>
+                    </select>
+                </div>
+                <!-- Description -->
+                <div class="form-group">
+                    <label for="request_description">Request Description</label>
+                    <textarea class="form-control" id="request_description" name="request_description" rows="6" placeholder="Describe your request..." required></textarea>
+                </div>
+                <!-- Submit Button-->
+                <button type="submit" class="btn btn-success"> Save Changes </button>
+                <a href="/dashboard" class="btn btn-secondary"> Cancel </a>
+            </form>
+            <!-- Flash Messages-->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                         </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+        </div>
+    </div>
+
+{% endblock %}

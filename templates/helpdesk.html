@@ -1,222 +1,141 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Helpdesk Dashboard</title>
-    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css"
-          integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
-    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
-</head>
-<body>
+{% extends 'layout.html' %}
 
-<!-- NAVBAR -->
-<nav class="navbar navbar-expand-lg navbar-light bg-light">
+{% block title %} Helpdesk Dashboard {% endblock %}
 
-    <a class="navbar-brand font-weight-bold" href="/">
-        NITTANY AUCTION
-    </a>
+{% block content %}
 
-    <div class="ml-auto">
-        <a href="/logout" class="btn btn-outline-secondary">
-            Logout
-        </a>
-    </div>
-
-</nav>
-
-<!-- MAIN -->
-<div class="container mt-4">
-
-    <div class="bg-light p-4 rounded">
-        <h1>HelpDesk Dashboard</h1>
-
-        <p>Manage requests and marketplace data.</p>
-
-        <div class="mb-4">
-
-            <a href="{{ url_for('add_category') }}"
-               class="btn btn-success">
-
-               Add New Category
-
-            </a>
-
-        </div>
-
-        <h2 class="mb-3">
-            HelpDesk Requests
-        </h2>
-
-        <p class="text-muted">
-            Requests assigned to you or the HelpDesk team queue.
-        </p>
-
-        {% if requests|length == 0 %}
-
-            <div class="alert alert-info mt-4">
-                No pending requests.
+    <!-- MAIN CONTENT -->
+    <div class="container mt-4 bg-light p-4 rounded">
+    <!-- Shows Helpdesk Dashboard -->
+        <h2>Helpdesk Dashboard</h2>
+        <p>Manage and View All Incoming Requests</p>
+            <div class="card mb-4">
+            <!-- Display All the Unassigned Requests -->
+                <div class="card-header">Unassigned Requests</div>
+                <div class="card-body">
+                    <!-- If there is no Unassigned Request Show Alert -->
+                    {% if unassigned|length == 0 %}
+                        <div class="alert alert-info mt-4">No pending requests.</div>
+                    <!-- Loop through all the Unassigned Request -->
+                    {% else %}
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-hover mt-3">
+                                <thead class="thead-light">
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Sender</th>
+                                        <th>Type</th>
+                                        <th>Description</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for req in unassigned %}
+                                    <tr>
+                                        <td>{{ req.request_id }}</td>
+                                        <td>{{ req.sender_email }}</td>
+                                        <td>{{ req.request_type }}</td>
+                                        <td>{{ req.request_desc }}</td>
+                                        <td>
+                                            <!-- Button to claim Task-->
+                                            <form action="/claim_request" method="POST">
+                                                <input type="hidden" name="request_id" value="{{ req.request_id }}">
+                                                <button type="submit" class="btn btn-primary btn-sm">Claim</button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% endif %}
+                </div>
+            <!-- Display My Claimed Request-->
+            <div class="card mb-4">
+                <div class="card-header">Ongoing Requests</div>
+                <div class="card-body">
+                    <!-- If there is no Ongoing Request Show Alert -->
+                    {% if ongoing|length == 0 %}
+                        <div class="alert alert-info mt-4">No Ongoing Requests.</div>
+                    <!-- Loop through all the Ongoing Request -->
+                    {% else %}
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-hover mt-3">
+                                <thead class="thead-light">
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Sender</th>
+                                        <th>Type</th>
+                                        <th>Description</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for req in ongoing %}
+                                    <tr>
+                                        <td>{{ req.request_id }}</td>
+                                        <td>{{ req.sender_email }}</td>
+                                        <td>{{ req.request_type }}</td>
+                                        <td>{{ req.request_desc }}</td>
+                                        <td>
+                                            <!-- Button to mark task is completed-->
+                                            <form action="/complete_request" method="POST">
+                                                <input type="hidden" name="request_id" value="{{ req.request_id }}">
+                                                <button type="submit" class="btn btn-success btn-sm">Complete</button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% endif %}
+                </div>
             </div>
 
-        {% else %}
-
-        <div class="table-responsive">
-
-            <table class="table table-bordered table-hover mt-3">
-
-                <thead class="thead-light">
-                    <tr>
-                        <th>ID</th>
-                        <th>Sender</th>
-                        <th>Assigned To</th>
-                        <th>Type</th>
-                        <th>Description</th>
-                        <th>Status</th>
-                        <th>Action</th>
-                    </tr>
-                </thead>
-
-                <tbody>
-
-                    {% for req in requests %}
-                    <tr>
-
-                        <td>{{ req.request_id }}</td>
-
-                        <td>{{ req.sender_email }}</td>
-
-                        <td>{{ req.helpdesk_staff_email }}</td>
-
-                        <td>{{ req.request_type }}</td>
-
-                        <td>{{ req.request_desc }}</td>
-
-                        <td>
-                            {% if req.request_status == 0 %}
-                                <span class="badge badge-warning">
-                                    Pending
-                                </span>
-                            {% else %}
-                                <span class="badge badge-success">
-                                    Completed
-                                </span>
-                            {% endif %}
-                        </td>
-
-                        <td>
-
-                            {% if req.request_type == 'ChangeID'
-                                  and req.request_status == 0 %}
-
-                                <a href="{{ url_for('change_user_id',
-                                                    request_id=req.request_id) }}"
-                                   class="btn btn-warning btn-sm">
-
-                                   Change ID
-
-                                </a>
-
-                            {% elif req.request_status == 0 %}
-
-                            <a href="{{ url_for('approve_request',
-                                                    request_id=req.request_id) }}"
-                               class="btn btn-sm btn-success">
-
-                                Approve
-
-                            </a>
-
-                            {% else %}
-
-                            <span class="badge badge-success">
-                                    Completed
-                                </span>
-
-                            {% endif %}
-
-                        </td>
-
-                    </tr>
-                    {% endfor %}
-
-                </tbody>
-
-            </table>
-
-        </div>
-
-        {% endif %}
-
-        <div class="container mt-4 bg-light p-4 rounded">
-
-            <h2>Local Vendors</h2>
-
-            <p>
-                Manage approved local business sellers.
-            </p>
-
-            <table class="table table-bordered table-striped">
-
-                <thead>
-
-                    <tr>
-
-                        <th>Email</th>
-                        <th>Business Name</th>
-                        <th>Customer Service</th>
-                        <th>Action</th>
-
-                    </tr>
-
-                </thead>
-
-                <tbody>
-
-                    {% if vendors|length == 0 %}
-
-                    <tr>
-                        <td colspan="4" class="text-center">
-                            No local vendors found.
-                        </td>
-                    </tr>
-
+            <div class="card">
+                <div class="card-header">Completed Requests</div>
+                <div class="card-body">
+                    <!-- If there is no Completed Request Show Alert -->
+                    {% if completed|length == 0 %}
+                        <div class="alert alert-info mt-4">No Completed Requests.</div>
+                    <!-- Loop through all the Completed Request -->
+                    {% else %}
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-hover mt-3">
+                                <thead class="thead-light">
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Sender</th>
+                                        <th>Staff Responsible</th>
+                                        <th>Type</th>
+                                        <th>Description</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for req in completed %}
+                                    <tr>
+                                        <td>{{ req.request_id }}</td>
+                                        <td>{{ req.sender_email }}</td>
+                                        <td>{{ req.helpdesk_staff_email }}</td>
+                                        <td>{{ req.request_type }}</td>
+                                        <td>{{ req.request_desc }}</td>
+                                        <td>
+                                            <span class="badge badge-success">Completed</span>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
                     {% endif %}
+                </div>
+            </div>
+            </div>
 
-                    {% for vendor in vendors %}
-
-                    <tr>
-
-                        <td>{{ vendor.Email }}</td>
-
-                        <td>{{ vendor.Business_Name }}</td>
-
-                        <td>{{ vendor.Customer_Service_Phone_Number }}</td>
-
-                        <td>
-
-                            <a href="{{ url_for('remove_vendor',
-                                                vendor_email=vendor.Email) }}"
-                               class="btn btn-danger btn-sm"
-                               onclick="return confirm('Remove vendor and all listings?')">
-
-                               Remove Vendor
-
-                            </a>
-
-                        </td>
-
-                    </tr>
-
-                    {% endfor %}
-
-                </tbody>
-
-            </table>
-
-        </div>
 
     </div>
 
-</div>
 
-</body>
-</html>
+{% endblock %}

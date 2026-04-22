@@ -142,7 +142,7 @@ def bidder_dashboard():
             highest_bidder_name = get_bidder_display_name(highest_bidder)
 
         if highest_bidder == bidder:
-            highest_bidder = "You"
+            highest_bidder_name = "You"
 
 
 

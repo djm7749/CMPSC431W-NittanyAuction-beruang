@@ -116,11 +116,10 @@ def bidder_dashboard():
 
     active_role = session.get('active_role')
     bidder = session['user_email']
+    bidder_name = get_bidder_display_name(bidder)
     auction_rows = get_bidder_auctions(bidder)
 
     items = []
-
-
 
     for auction in auction_rows:
         # listing = get_auction_listing_by_id(bidder, auction["Listing_ID"])
@@ -137,8 +136,11 @@ def bidder_dashboard():
 
         highest_bidder = auction["Bidder_Email"] if auction["Bidder_Email"] else "No bids yet"
 
+        if highest_bidder:
+            highest_bidder_name = get_bidder_display_name(highest_bidder)
+
         if highest_bidder == bidder:
-            highest_bidder = "You"
+            highest_bidder_name = "You"
 
 
 
@@ -147,6 +149,7 @@ def bidder_dashboard():
             "name": auction["name"],
             "price": auction["Bid_Price"] if auction["Bid_Price"] else 0,
             "highest_bidder": highest_bidder,
+            "highest_bidder_name": highest_bidder_name,
             "status": status,
             "image": "default-auction.jpg",
             "max_bids": listing["Max_bids"],
@@ -303,7 +306,12 @@ def browse():
 
     categories = get_categories(selected_category if selected_category else None)
 
-    auction_rows, total_items = get_browse_items(q, per_page, offset, selected_category)
+    # Only fetch items if user searches or selects category
+    if q or selected_category:
+        auction_rows, total_items = get_browse_items(q, per_page, offset, selected_category)
+    else:
+        auction_rows = []
+        total_items = 0
 
     # Convert data
     items = []

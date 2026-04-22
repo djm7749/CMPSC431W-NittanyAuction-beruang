@@ -684,6 +684,33 @@ def create_credit_card(credit_card_num, card_type, expire_month, expire_year, se
     conn.commit()
     conn.close()
 
+def store_create_request(email, request_type, request_desc):
+    conn = db_connect()
+    cur = conn.cursor()
+
+    # Get Biggest request ID to create new request ID
+    cur.execute("""
+        SELECT MAX(request_id) 
+        FROM Requests
+    """,)
+    result = cur.fetchone()
+
+    # If no request_id (table is empty) create request_id = 1
+    if result[0] is None:
+        next_id = 1
+    else:
+        # Increment request_id by 1 to ensure PK holds
+        next_id = result[0] + 1
+
+    helpdesk_email = "helpdeskteam@lsu.edu"
+    cur.execute("""INSERT INTO Requests (request_id, sender_email,helpdesk_staff_email, request_type, request_desc, request_status)
+        VALUES (?, ?, ?, ?, ?,?)
+    """, (next_id, email, helpdesk_email, request_type, request_desc, 0))
+    conn.commit()
+    conn.close()
+
+
+
 # def get_bidder_auctions(bidder_email):
 #     conn = db_connect()
 #     cur = conn.cursor()

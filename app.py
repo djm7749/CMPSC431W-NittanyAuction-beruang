@@ -700,6 +700,28 @@ def add_credit_card():
         print("Error Adding Credit Card", e)
     return redirect('/account')
 
+@app.route('/submit_request')
+def submit_request():
+    active_role = session.get('active_role')
+    roles = session.get('roles')
+    return render_template('submit_request.html', active_role= active_role, roles=roles)
+
+@app.route('/create_request', methods=['POST'])
+def create_request():
+    email = session.get('user_email')
+    request_type = request.form.get('request_type')
+    request_description = request.form.get('request_description')
+
+    try:
+        store_create_request(email,request_type,request_description)
+        flash("Request submitted successfully!", "success")
+        print("Request submitted")
+    except Exception as e:
+        flash(f"Error Submitting Request: {str(e)}", "danger")
+        print("Error Submitting Request", e)
+    return redirect('/submit_request')
+
+
 if __name__ == '__main__':
     app.run(debug=True)         # Set debug=True for development to allow auto-reloading 
 

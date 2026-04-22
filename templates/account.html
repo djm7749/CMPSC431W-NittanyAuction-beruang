@@ -99,6 +99,7 @@
                                value="{{ user_data['major'] }}" required>
                     </div>
                 </div>
+                </form>
                 <!-- For Bidder Display Credit Cards -->
                 <hr>
                 <h5>Payment Method (Credit Cards)</h5>
@@ -152,11 +153,11 @@
                         </div>
                         <div class="form-group col-md-2">
                             <label for = "expire_month">Month</label>
-                            <input type="number" class="form-control" id="expire_month" name="new_exp_month" min="1" max="12" placeholder="MM">
+                            <input type="number" class="form-control" id="expire_month" name="expire_month" min="1" max="12" placeholder="MM">
                         </div>
                         <div class="form-group col-md-2">
                             <label for = "expire_year">Year</label>
-                            <input type="number" class="form-control" id="expire_year" name="new_exp_year" placeholder="YYYY">
+                            <input type="number" class="form-control" id="expire_year" name="expire_year" placeholder="YYYY">
                         </div>
                         <div class="form-group col-md-1">
                             <label for = "security_code" > CVV</label>
@@ -167,6 +168,7 @@
                 </form>
             {% endif %}
             <!-- Shows User Address -->
+    <form action="/update_profile" method="POST">
             <hr>
             <h5>Contact Information</h5>
             <div class = "form-row" >

@@ -582,9 +582,107 @@ def get_user_credit_cards(email):
         return []
     return cards
 
+def get_completed_request():
+    conn = db_connect()
+    cur = conn.cursor()
+    cur.execute(""" 
+        SELECT *
+        FROM Requests
+        WHERE request_status = 1
+    """,)
+    completed_requests = cur.fetchall()
+    conn.close()
+
+    if not completed_requests:
+        return []
+    return completed_requests
+
+def get_unassigned_request():
+
+    helpdesk_email = "helpdeskteam@lsu.edu"
+    conn = db_connect()
+    cur = conn.cursor()
+    cur.execute("""
+                SELECT request_id,sender_email,request_type,request_desc
+                FROM Requests
+                WHERE helpdesk_staff_email = ?
+                """, (helpdesk_email,))
+    unassigned_requests = cur.fetchall()
+    conn.close()
+    if not unassigned_requests:
+        return []
+    return unassigned_requests
+
+def get_ongoing_request(email):
+    conn = db_connect()
+    cur = conn.cursor()
+    cur.execute("""
+                SELECT request_id,sender_email,request_type,request_desc
+                FROM Requests
+                WHERE helpdesk_staff_email = ? AND request_status = 0
+                """,(email,))
+    ongoing_request = cur.fetchall()
+    conn.close()
+    if not ongoing_request:
+        return []
+    return ongoing_request
+
+def get_local_vendors():
+    conn = db_connect()
+    cur = conn.cursor()
+    cur.execute("""
+        SELECT *
+        FROM Local_Vendors
+    """,)
+    local_vendors = cur.fetchall()
+    conn.close()
+
+# Claim Request by Changing the helpdesk_staff_email to user claiming the request's email
+def helpdesk_claim_request(email, request_id):
+    conn = db_connect()
+    cur = conn.cursor()
+    cur.execute("""
+        UPDATE Requests
+        SET helpdesk_staff_email = ?
+        WHERE request_id = ?
+    """, (email, request_id))
+    conn.commit()
+    conn.close()
+
+# Complete Request by Changing the request status to 1
+def helpdesk_complete_request(request_id):
+    conn = db_connect()
+    cur = conn.cursor()
+    cur.execute("""
+        UPDATE Requests
+        SET request_status = 1
+        WHERE request_id = ?
+    """, (request_id,))
+    conn.commit()
+    conn.close()
+
+def delete_credit_card(credit_card_num):
+    conn = db_connect()
+    cur = conn.cursor()
+    cur.execute("""
+        DELETE FROM Credit_Cards
+        WHERE credit_card_num = ?
+    """, (credit_card_num,))
+    conn.commit()
+    conn.close()
 
 
-
+def create_credit_card(credit_card_num, card_type, expire_month, expire_year, security_code, owner_email):
+    conn = db_connect()
+    cur = conn.cursor()
+    cur.execute("""
+                INSERT INTO Credit_Cards
+                (credit_card_num, card_type, expire_month, expire_year, security_code, owner_email)
+                VALUES (?, ?, ?, ?, ?, ?)
+                """, (
+                    credit_card_num, card_type, expire_month, expire_year, security_code, owner_email,))
+    conn.commit()
+    conn.close()
 
 # def get_bidder_auctions(bidder_email):
 #     conn = db_connect()

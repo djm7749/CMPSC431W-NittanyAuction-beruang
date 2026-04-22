@@ -165,7 +165,12 @@ def seller_dashboard():
 
 @app.route('/helpdesk_dashboard')
 def helpdesk_dashboard():
-    return render_template('helpdesk.html')
+
+    user_email = session.get('user_email')
+    unassigned_request = get_unassigned_request()
+    ongoing_request = get_ongoing_request(user_email)
+    completed_request = get_completed_request()
+    return render_template('helpdesk.html', unassigned=unassigned_request, ongoing=ongoing_request, completed=completed_request)
 
 
 @app.route('/seller_dashboard/create_auction', methods=['GET', 'POST'])
@@ -509,36 +514,6 @@ def view_listing(listing_id):
 
     return render_template('view-listing.html', listing=listing, bids=get_bids_history(listing_id), highest_bid=highest_bid, active_role=session.get('active_role'), highest_bidder=highest_bidder)
 
-
-# Helper Function : Make a hierarchical tree from category database
-# def load_categories(rows):
-#     nodes = {}
-#     tree = []
-#
-#     for row in rows:
-#         name = row['category_name'].strip()
-#         parent = row['parent_category'].strip() if row['parent_category'] else None
-#
-#         node = {
-#             'name': name,
-#             'parent': parent,
-#             'children': [],
-#         }
-#
-#         nodes[name] = node
-#
-#     for node in nodes.values():
-#         parent = node['parent']
-#
-#         if parent == '' or parent is None:
-#             tree.append(node)
-#         elif parent in nodes:
-#             nodes[parent]['children'].append(node)
-#         else:
-#             tree.append(node)
-#
-#     return tree
-
 # Helper function for loading categories in dropdown - used in create and edit auction for sellers
 def build_category_dropdown(parent_category=None, level=0, result=None):
     if result is None:
@@ -566,7 +541,7 @@ def add_category():
     if 'user_email' not in session:
         return redirect(url_for('login'))
 
-    if session.get('role') != 'Helpdesk':
+    if session.get('active_role') != 'Helpdesk':
         return redirect(url_for('login'))
 
     conn = db_connect()
@@ -626,172 +601,6 @@ def add_category():
         categories=categories
     )
 
-@app.route('/change_user_id/<int:request_id>', methods=['GET', 'POST'])
-def change_user_id(request_id):
-
-    #helpdesk access only
-    if 'user_email' not in session:
-        return redirect(url_for('login'))
-
-    if session.get('role') != 'Helpdesk':
-        return redirect(url_for('login'))
-
-    conn = db_connect()
-    cur = conn.cursor()
-
-    # LOAD REQUEST
-    cur.execute("""
-        SELECT *
-        FROM Requests
-        WHERE request_id = ?
-    """, (request_id,))
-
-    req = cur.fetchone()
-
-    if not req:
-        conn.close()
-        return redirect(url_for('helpdesk_dashboard'))
-
-    # SUBMIT CHANGE
-    if request.method == 'POST':
-
-        old_email = request.form['old_email'].strip().lower()
-        new_email = request.form['new_email'].strip().lower()
-
-        # duplicate check
-        cur.execute("""
-            SELECT *
-            FROM Users
-            WHERE email = ?
-        """, (new_email,))
-
-        if cur.fetchone():
-            conn.close()
-            return render_template(
-                "change_id.html",
-                req=req,
-                error="New ID already exists."
-            )
-
-
-        # UPDATE ALL TABLES
-        tables = [
-
-            ("Users", "email"),
-            ("Bidders", "email"),
-            ("Sellers", "email"),
-            ("Helpdesk", "email"),
-            ("Local_Vendors", "Email"),
-
-            ("Auction_Listings", "Seller_Email"),
-
-            ("Credit_Cards", "Owner_email"),
-
-            ("Requests", "sender_email"),
-            ("Requests", "helpdesk_staff_email"),
-
-            ("Rating", "Bidder_Email"),
-            ("Rating", "Seller_Email"),
-
-            ("Bids", "Bidder_Email"),
-            ("Bids", "Seller_Email")
-
-        ]
-
-        for table, column in tables:
-
-            cur.execute(f"""
-                UPDATE {table}
-                SET {column} = ?
-                WHERE {column} = ?
-            """, (
-                new_email,
-                old_email
-            ))
-
-        # mark request completed
-        cur.execute("""
-            UPDATE Requests
-            SET request_status = 1
-            WHERE request_id = ?
-        """, (request_id,))
-
-        conn.commit()
-        conn.close()
-
-        return redirect(url_for('helpdesk_dashboard'))
-
-    conn.close()
-
-    return render_template(
-        "change_id.html",
-        req=req
-    )
-
-@app.route('/approve_request/<int:request_id>')
-def approve_request(request_id):
-
-    if 'user_email' not in session:
-        return redirect(url_for('login'))
-
-    helpdesk_email = session['user_email']
-
-    conn = db_connect()
-    cur = conn.cursor()
-
-    # get request
-    cur.execute("""
-        SELECT *
-        FROM Requests
-        WHERE request_id = ?
-    """, (request_id,))
-
-    req = cur.fetchone()
-
-    if not req:
-        conn.close()
-        return redirect(url_for('helpdesk_dashboard'))
-
-    sender_email = req["sender_email"]
-    request_type = req["request_type"]
-
-    # Seller Application approval
-    if request_type == "SellerApplication":
-
-        # already seller?
-        cur.execute("""
-            SELECT *
-            FROM Sellers
-            WHERE Email = ?
-        """, (sender_email,))
-
-        if not cur.fetchone():
-
-            cur.execute("""
-                INSERT INTO Sellers
-                (Email, bank_routing_number, bank_account_number, balance)
-                VALUES (?, ?, ?, ?)
-            """, (
-                sender_email,
-                None,
-                None,
-                0
-            ))
-
-    # mark request completed
-    cur.execute("""
-        UPDATE Requests
-        SET request_status = 1
-        WHERE request_id = ?
-    """, (
-        request_id
-    ))
-
-    conn.commit()
-    conn.close()
-
-    return redirect(url_for('helpdesk_dashboard'))
-
 @app.route('/remove_vendor/<vendor_email>')
 def remove_vendor(vendor_email):
 
@@ -842,7 +651,54 @@ def remove_vendor(vendor_email):
 
     return redirect(url_for('helpdesk_dashboard'))
 
+@app.route('/claim_request', methods=['POST'])
+def claim_request():
+    email = session.get('user_email')
+    if not email:
+        return redirect('/login')
 
+    request_id = request.form.get('request_id')
+    helpdesk_claim_request(email, request_id)
+    return redirect('/helpdesk_dashboard')
+
+
+@app.route('/complete_request', methods=['POST'])
+def complete_request():
+    email = session.get('user_email')
+    if not email:
+        return redirect('/login')
+
+    request_id = request.form.get('request_id')
+    helpdesk_complete_request(request_id)
+    return redirect('/helpdesk_dashboard')
+
+@app.route('/delete_card', methods=['POST'])
+def delete_card():
+    credit_card_num = request.form.get('credit_card_num')
+    delete_credit_card(credit_card_num)
+    return redirect('/account')
+
+@app.route('/add_credit_card', methods=['POST'])
+def add_credit_card():
+    credit_card_num = request.form.get('credit_card_num')
+    card_type = request.form.get('card_type')
+    expire_month = request.form.get('expire_month')
+    expire_year = request.form.get('expire_year')
+    security_code = request.form.get('security_code')
+    owner_email = session.get('user_email')
+
+    if not credit_card_num.isdigit() or len(credit_card_num) not in [15, 16]:
+        return redirect('/account')
+    if not security_code.isdigit() or len(security_code) not in [3, 4]:
+        return redirect('/account')
+    if not all([credit_card_num, card_type, expire_month, expire_year, security_code]):
+        return redirect('/account')
+    try:
+        create_credit_card(credit_card_num, card_type, expire_month, expire_year, security_code, owner_email)
+        print("Credit card added")
+    except Exception as e:
+        print("Error Adding Credit Card", e)
+    return redirect('/account')
 
 if __name__ == '__main__':
     app.run(debug=True)         # Set debug=True for development to allow auto-reloading 

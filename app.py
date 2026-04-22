@@ -94,6 +94,8 @@ def signup():
             conn.commit()
             conn.close()
 
+            session['user_email'] = email
+
             return redirect(url_for('bidder_dashboard'))
 
         # We assume non-LSU email = Sellers
@@ -105,6 +107,8 @@ def signup():
             conn.commit()
             conn.close()
 
+            session['user_email'] = email
+
             return redirect(url_for('seller_dashboard'))
 
     return render_template('signup.html')
@@ -115,7 +119,7 @@ from db import get_bidder_auctions
 def bidder_dashboard():
 
     active_role = session.get('active_role')
-    bidder = session['user_email']
+    bidder = session.get('user_email')
     bidder_name = get_bidder_display_name(bidder)
     auction_rows = get_bidder_auctions(bidder)
 

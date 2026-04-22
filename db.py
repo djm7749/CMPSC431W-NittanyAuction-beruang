@@ -1,4 +1,5 @@
 import sqlite3
+import uuid
 
 DB_NAME = 'auction.db'
 def db_connect():
@@ -806,6 +807,13 @@ def mark_listing_pending_payment(seller_email, listing_id):
 
     conn.commit()
     conn.close()
+
+def generate_unique_address_id(cur):
+    while True:
+        address_id = uuid.uuid4().hex
+        cur.execute("SELECT 1 FROM Address WHERE address_id = ?", (address_id,))
+        if not cur.fetchone():
+            return address_id
 
 
 def get_seller_rating(seller_email):

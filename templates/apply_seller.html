@@ -24,6 +24,12 @@
                         and sell items on Nittany Auction.
                     </p>
 
+                    {% if error %}
+                    <div class="alert alert-danger">
+                        {{ error }}
+                    </div>
+                    {% endif %}
+
                     <form method="POST"
                           action="{{ url_for('apply_seller') }}">
 

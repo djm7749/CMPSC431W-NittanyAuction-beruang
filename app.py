@@ -844,6 +844,23 @@ def apply_seller():
     conn = db_connect()
     cur = conn.cursor()
 
+    # already seller?
+    cur.execute("""
+        SELECT *
+        FROM Sellers
+        WHERE Email = ?
+    """, (email,))
+
+    if cur.fetchone():
+
+        conn.close()
+
+        return render_template(
+            "apply_seller.html",
+            error="You are already an approved seller."
+        )
+
+
     if request.method == 'POST':
 
         desc = request.form['description']

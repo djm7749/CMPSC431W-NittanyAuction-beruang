@@ -898,7 +898,26 @@ def dashboard():
 
 @app.route('/rating')
 def rating():
-    return render_template("rating.html")
+    seller_email = request.args.get('seller_email')
+    return render_template("rating.html", seller_email=seller_email)
+
+@app.route('/submit_rating', methods=['POST'])
+def submit_rating():
+    bidder_email = session.get('user_email')
+    seller_email = request.form.get('seller_email')
+    rating = request.form.get('rating')
+    rating_desc = request.form.get('rating_description')
+    try:
+        store_rating(bidder_email,seller_email,rating,rating_desc)
+        print("Rating submitted")
+    except Exception as e:
+        print("Error Submitting Rating", e)
+        return render_template("rating.html", seller_email=seller_email)
+    return redirect("/dashboard")
+
+
+
+
 
 
 if __name__ == '__main__':

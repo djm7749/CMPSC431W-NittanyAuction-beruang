@@ -827,3 +827,13 @@ def get_seller_rating(seller_email):
         avg_rating = 0
 
     return {"avg_rating": round(avg_rating,1),  "total_ratings":total_ratings}
+
+def store_rating(bidder_email, seller_email, rating, rating_desc):
+    conn = db_connect()
+    cur = conn.cursor()
+    cur.execute("""
+        INSERT INTO Rating (Bidder_Email, Seller_Email, Date, Rating, Rating_Desc)
+        VALUES (?, ?, DATE('now'), ?, ?)
+    """, (bidder_email, seller_email, rating, rating_desc))
+    conn.commit()
+    conn.close()

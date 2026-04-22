@@ -291,11 +291,10 @@ def browse():
     selected_category = request.args.get('category', '').strip()
     # category_path = get_category_path(selected_category) if selected_category else []
     category_path = ["All Categories"]
-    if selected_category=="All Categories":
+    if selected_category == "All Categories":
         selected_category = None
     else:
         category_path += get_category_path(selected_category)
-
 
     # if category:
     #     categories = get_categories(category)
@@ -305,7 +304,6 @@ def browse():
     categories = get_categories(selected_category if selected_category else None)
 
     auction_rows, total_items = get_browse_items(q, per_page, offset, selected_category)
-    
 
     # Convert data
     items = []
@@ -335,14 +333,6 @@ def update_profile():
     if not user_email:
         return redirect("/")
 
-    password_updated = False
-    old_password = request.form.get('old_password')
-    new_password = request.form.get('new_password')
-    confirm_password = request.form.get('confirm_password')
-    street_num = request.form.get('street_num')
-    street_name = request.form.get('street_name')
-    zip_code = request.form.get('zip_code')
-
     # Update User First Name, Last Name, Age, Major
     if active_role == "Bidder":
         first_name = request.form.get('first_name')
@@ -354,6 +344,24 @@ def update_profile():
             print("Updated Bidder Profile")
         except Exception as e:
             print("Error updating Bidder Profile", e)
+    return redirect("/account")
+
+
+
+@app.route('/update_password', methods=['POST'])
+def update_password():
+    user_email = session['user_email']
+    user = get_user(user_email)
+    active_role = session.get('active_role')
+    address_id = get_user_address_id(user_email, roles=get_user_roles(user_email))
+
+    password_updated = False
+    old_password = request.form.get('old_password')
+    new_password = request.form.get('new_password')
+    confirm_password = request.form.get('confirm_password')
+    street_num = request.form.get('street_num')
+    street_name = request.form.get('street_name')
+    zipcode = request.form.get('zipcode')
 
     # Update User Password
     # 1. Check Users Password cannot be empty
@@ -387,7 +395,7 @@ def update_profile():
 
     # Update User Address
     try:
-        update_user_address(address_id, street_num, street_name, zip_code)
+        update_user_address(address_id, street_num, street_name, zipcode)
         print("Updated Address")
     except Exception as e:
         print("Error updating Address", e)
@@ -396,9 +404,6 @@ def update_profile():
     if password_updated:
         return redirect("/login")
     return redirect("/account")
-
-
-
 
 @app.route('/account')
 def account():
@@ -516,6 +521,7 @@ def view_listing(listing_id):
         
 
         place_bid(listing_id, bidder, bid_price)
+        new_bid_count = bid_count + 1
 
         # Get updated highest bid and bidder
         highest_bid = get_highest_bid(listing_id)
@@ -523,9 +529,8 @@ def view_listing(listing_id):
         bids = get_bids_history(listing_id)
 
         # 7. win the auction
-        if bid_count == max_bids:
-            win = True
-            return render_template('view-listing.html', listing=listing, bids=get_bids_history(listing_id), highest_bid=highest_bid, active_role=session.get('active_role'), highest_bidder=highest_bidder)
+        if new_bid_count == max_bids:
+            return redirect(url_for('payment', seller_email=seller, listing_id=listing_id))
             # flash("Congratulations! You have won the auction!")
 
 
@@ -541,7 +546,116 @@ def view_listing(listing_id):
         highest_bid = bids[0]['Bid_Price']
         highest_bidder = bids[0]['Bidder_email']
 
-    return render_template('view-listing.html', listing=listing, bids=get_bids_history(listing_id), highest_bid=highest_bid, active_role=session.get('active_role'), highest_bidder=highest_bidder, win=win)
+    return render_template('view-listing.html', listing=listing, bids=get_bids_history(listing_id), highest_bid=highest_bid, active_role=session.get('active_role'), highest_bidder=highest_bidder)
+
+@app.route('/payment/<seller_email>/<int:listing_id>')
+def payment(seller_email, listing_id):
+    user_email = session.get('user_email')
+    seller_name = get_seller_display_name(seller_email)
+
+    # retrieve listing
+    listing = get_auction_listing_by_id(seller_email,listing_id)
+    if not listing:
+        return "Listing not found",404
+
+    # retrieve user credit cards
+    cards = get_user_credit_cards(user_email)
+    selected_card = cards[0]['credit_card_num'] if cards else None
+
+    # retrieve the final (highest) bid
+    final_price = get_highest_bid(listing_id)
+
+    # initialization form action
+    show_add_form = request.args.get('show_add_form', '0') == '1'
+
+    return render_template(
+        'payment.html',
+        listing=listing,
+        seller_name=seller_name,
+        cards=cards,
+        final_price=final_price,
+        show_add_form=show_add_form,
+        selected_card=selected_card,
+        error=None
+    )
+
+@app.route('/payment/<seller_email>/<int:listing_id>/save_card', methods=['POST'])
+def save_card(seller_email, listing_id):
+    user_email = session.get('user_email')
+    seller_name = get_seller_display_name(seller_email)
+
+    listing = get_auction_listing_by_id(seller_email, listing_id)
+    if not listing:
+        return "Listing not found", 404
+
+    cards = get_user_credit_cards(user_email)
+    selected_card = cards[0]['credit_card_num'] if cards else None
+
+    final_price = get_highest_bid(listing_id)
+
+    credit_card_num = request.form.get('credit_card_num', '').strip()
+    card_type = request.form.get('card_type', '').strip()
+    expire_month = request.form.get('expire_month', '').strip()
+    expire_year = request.form.get('expire_year', '').strip()
+    security_code = request.form.get('security_code', '').strip()
+
+    # Input validation
+    error = None
+
+    if not credit_card_num or not card_type or not expire_month or not expire_year or not security_code:
+        error = "Please fill in all credit card fields."
+
+    elif not expire_month.isdigit():
+        error = "Expire month must be a number."
+
+    elif int(expire_month) < 1 or int(expire_month) > 12:
+        error = "Expire month must be between 1 and 12."
+
+    elif not expire_year.isdigit():
+        error = "Expire year must be a number."
+
+    elif not security_code.isdigit():
+        error = "Security code must contain only digits."
+
+    if error:
+        return render_template(
+            'payment.html',
+            listing=listing,
+            seller_name=seller_name,
+            cards=cards,
+            final_price=final_price,
+            show_add_form=True,
+            selected_card=selected_card,
+            error=error
+        )
+
+    create_credit_card(
+        credit_card_num=credit_card_num,
+        card_type=card_type,
+        expire_month=int(expire_month),
+        expire_year=int(expire_year),
+        security_code=security_code,
+        owner_email=user_email
+    )
+
+    return redirect(url_for('payment', seller_email=seller_email, listing_id=listing_id))
+
+@app.route('/payment/<seller_email>/<int:listing_id>/submit', methods=['POST'])
+def submit_payment(seller_email, listing_id):
+    user_email = session.get('user_email')
+
+    final_price = get_highest_bid(listing_id)
+
+    create_transaction(
+        seller_email=seller_email,
+        listing_id=listing_id,
+        bidder_email=user_email,
+        payment_amount=final_price
+    )
+
+    mark_listing_sold(seller_email, listing_id)
+
+    return redirect(url_for('bidder_dashboard'))
 
 # Helper function for loading categories in dropdown - used in create and edit auction for sellers
 def build_category_dropdown(parent_category=None, level=0, result=None):
@@ -630,56 +744,6 @@ def add_category():
         categories=categories
     )
 
-@app.route('/remove_vendor/<vendor_email>')
-def remove_vendor(vendor_email):
-
-    # ONLY HELPDESK CAN USE THIS
-    if 'user_email' not in session:
-        return redirect(url_for('login'))
-
-    if session.get('role') != 'Helpdesk':
-        return redirect(url_for('login'))
-
-    conn = db_connect()
-    cur = conn.cursor()
-
-    # VERIFY THIS IS A LOCAL VENDOR
-    cur.execute("""
-        SELECT *
-        FROM Local_Vendors
-        WHERE Email = ?
-    """, (vendor_email,))
-
-    vendor = cur.fetchone()
-
-    if not vendor:
-        conn.close()
-        return redirect(url_for('helpdesk_dashboard'))
-
-    # REMOVE ALL THEIR PRODUCTS
-    cur.execute("""
-        DELETE FROM Auction_Listings
-        WHERE Seller_Email = ?
-    """, (vendor_email,))
-
-    # optional cleanup bids tied to listings
-    cur.execute("""
-        DELETE FROM Bids
-        WHERE Seller_Email = ?
-    """, (vendor_email,))
-
-
-    # REMOVE LOCAL VENDOR RECORD
-    cur.execute("""
-        DELETE FROM Local_Vendors
-        WHERE Email = ?
-    """, (vendor_email,))
-
-    conn.commit()
-    conn.close()
-
-    return redirect(url_for('helpdesk_dashboard'))
-
 @app.route('/claim_request', methods=['POST'])
 def claim_request():
     email = session.get('user_email')
@@ -749,6 +813,21 @@ def create_request():
         flash(f"Error Submitting Request: {str(e)}", "danger")
         print("Error Submitting Request", e)
     return redirect('/submit_request')
+
+@app.route('/dashboard')
+def dashboard():
+    active_role = session.get('active_role')
+    if active_role == "Bidder":
+        return redirect("bidder_dashboard")
+    elif active_role == "Seller":
+        return redirect("seller_dashboard")
+    else:
+        return redirect(url_for('helpdesk_dashboard'))
+
+
+@app.route('/rating')
+def rating():
+    return render_template("rating.html")
 
 
 if __name__ == '__main__':

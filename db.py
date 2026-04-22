@@ -284,8 +284,7 @@ def create_auction_listing(seller_email,auction_title,name,description,category,
     cur.execute("""
                 SELECT MAX(Listing_ID) AS max_id
                 FROM Auction_Listings
-                WHERE Seller_Email = ?
-                """, (seller_email,))
+                """)
 
     row = cur.fetchone()
     listing_id = (row["max_id"] + 1) if row["max_id"] is not None else 1
@@ -708,6 +707,69 @@ def store_create_request(email, request_type, request_desc):
     """, (next_id, email, helpdesk_email, request_type, request_desc, 0))
     conn.commit()
     conn.close()
+
+
+def create_transaction(seller_email, listing_id, bidder_email, payment_amount):
+    conn = db_connect()
+    cur = conn.cursor()
+
+    cur.execute("SELECT MAX(Transaction_ID) AS max_id FROM Transactions")
+    row = cur.fetchone()
+    next_transaction_id = (row["max_id"] + 1) if row["max_id"] is not None else 1
+
+    cur.execute("""
+        INSERT INTO Transactions (Transaction_ID, Seller_Email, Listing_ID, Bidder_Email, Date, Payment)
+        VALUES (?, ?, ?, ?, DATE('now'), ?)
+    """, (next_transaction_id, seller_email, listing_id, bidder_email, payment_amount))
+
+    conn.commit()
+    conn.close()
+
+def mark_listing_sold(seller_email, listing_id):
+    conn = db_connect()
+    cur = conn.cursor()
+
+    cur.execute("""
+        UPDATE Auction_Listings
+        SET Status = 2
+        WHERE Seller_Email = ? AND Listing_ID = ?
+    """, (seller_email, listing_id))
+
+    conn.commit()
+    conn.close()
+
+def get_seller_display_name(seller_email):
+    conn = db_connect()
+    cur = conn.cursor()
+
+    # First try local vendor
+    cur.execute("""
+        SELECT Business_Name
+        FROM Local_Vendors
+        WHERE Email = ?
+    """, (seller_email,))
+    row = cur.fetchone()
+    if row and row["Business_Name"]:
+        conn.close()
+        return row["Business_Name"]
+
+    # Then try bidder
+    cur.execute("""
+        SELECT first_name, last_name
+        FROM Bidders
+        WHERE email = ?
+    """, (seller_email,))
+    row = cur.fetchone()
+    conn.close()
+
+    if row:
+        first_name = row["first_name"] or ""
+        last_name = row["last_name"] or ""
+        full_name = f"{first_name} {last_name}".strip()
+        if full_name:
+            return full_name
+
+    return seller_email
 
 
 

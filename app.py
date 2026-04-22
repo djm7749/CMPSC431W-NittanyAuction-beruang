@@ -66,6 +66,15 @@ def signup():
         password = request.form['password'].strip()
         name = request.form['name'].strip()
 
+        street_num = request.form['street_num'].strip()
+        street_name = request.form['street_name'].strip()
+        zipcode = request.form['zipcode'].strip()
+
+        phone_num = request.form['phone'].strip()
+
+        bank_num = request.form['bank_num'].strip()
+        bank_route = request.form['bank_route'].strip()
+
         conn = db_connect()
         cur = conn.cursor()
 
@@ -79,7 +88,10 @@ def signup():
 
         hashed_input = hashlib.sha256(password.encode()).hexdigest()
 
+        address_id = generate_unique_address_id(cur)
+
         cur.execute("INSERT INTO Users (email, password_hash) VALUES (?, ?)", (email, hashed_input))
+        cur.execute("INSERT INTO Address (address_id,zipcode,street_num,street_name) VALUES (?,?,?,?)",(address_id,zipcode,street_num,street_name))
 
         # We assume LSU email = Bidder
         if email.endswith('@lsu.edu'):
@@ -89,12 +101,13 @@ def signup():
 
             cur.execute("""INSERT INTO Bidders (email, first_name, last_name, age, home_address_id, major)
                         VALUES (?, ?, ?, ?, ?, ?)""",
-                        (email, first_name, last_name, None, None, None))
+                        (email, first_name, last_name, None, address_id, None))
 
             conn.commit()
             conn.close()
 
             session['user_email'] = email
+            session['active_role'] = "Bidder"
 
             return redirect(url_for('bidder_dashboard'))
 
@@ -102,12 +115,16 @@ def signup():
         else:
             cur.execute("""INSERT INTO Sellers (email, bank_routing_number, bank_account_number, balance)
                         VALUES (?, ?, ?, ?)""",
-                        (email, None, None, 0.00))
+                        (email, bank_route, bank_num, 0.00))
+            cur.execute("""INSERT INTO Local_Vendors (Email,Business_Name,Business_Address_ID,Customer_Service_Phone_Number)
+                        VALUES (?,?,?,?)""",
+                        (email,name,address_id,phone_num))
 
             conn.commit()
             conn.close()
 
             session['user_email'] = email
+            session['active_role'] = "Seller"
 
             return redirect(url_for('seller_dashboard'))
 

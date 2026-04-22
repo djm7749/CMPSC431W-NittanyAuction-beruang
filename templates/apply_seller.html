@@ -1,0 +1,76 @@
+{% extends 'layout.html' %}
+
+{% block title %} Apply Seller {% endblock %}
+
+{% block content %}
+<!-- MAIN -->
+<div class="container mt-5">
+
+    <div class="row justify-content-center">
+
+        <div class="col-md-8">
+
+            <div class="card shadow-sm">
+
+                <div class="card-body p-4">
+
+                    <h2 class="mb-3">
+                        Apply to Become Seller
+                    </h2>
+
+                    <p class="text-muted">
+                        Submit a request to the HelpDesk team for approval.
+                        Once approved, you will be able to create auctions
+                        and sell items on Nittany Auction.
+                    </p>
+
+                    {% if error %}
+                    <div class="alert alert-danger">
+                        {{ error }}
+                    </div>
+                    {% endif %}
+
+                    <form method="POST"
+                          action="{{ url_for('apply_seller') }}">
+
+                        <div class="form-group">
+
+                            <label>
+                                Why would you like seller access?
+                            </label>
+
+                            <textarea
+                                class="form-control"
+                                name="description"
+                                rows="5"
+                                placeholder="Example: I would like to sell textbooks, electronics, and furniture."
+                                required></textarea>
+
+                        </div>
+
+                        <button type="submit"
+                                class="btn btn-success btn-block">
+
+                            Submit Application
+
+                        </button>
+
+                    </form>
+
+                    <a href="{{ url_for('bidder_dashboard') }}"
+                       class="btn btn-link btn-block mt-3">
+
+                        Cancel
+
+                    </a>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+{% endblock %}

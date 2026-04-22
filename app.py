@@ -116,6 +116,7 @@ def bidder_dashboard():
 
     active_role = session.get('active_role')
     bidder = session['user_email']
+    bidder_name = get_bidder_display_name(bidder) 
     auction_rows = get_bidder_auctions(bidder)
 
     items = []
@@ -137,6 +138,9 @@ def bidder_dashboard():
 
         highest_bidder = auction["Bidder_Email"] if auction["Bidder_Email"] else "No bids yet"
 
+        if highest_bidder:
+            highest_bidder_name = get_bidder_display_name(highest_bidder)
+
         if highest_bidder == bidder:
             highest_bidder = "You"
 
@@ -147,6 +151,7 @@ def bidder_dashboard():
             "name": auction["name"],
             "price": auction["Bid_Price"] if auction["Bid_Price"] else 0,
             "highest_bidder": highest_bidder,
+            "highest_bidder_name": highest_bidder_name,
             "status": status,
             "image": "default-auction.jpg",
             "max_bids": listing["Max_bids"],

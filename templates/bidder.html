@@ -25,7 +25,7 @@
 
                         <div class="mb-3">
                             <p class="mb-1"><b>Current Bid:</b> ${{ item.price }}</p>
-                            <p class="mb-1"><b>Highest Bidder:</b> {{ item.highest_bidder }}</p>
+                            <p class="mb-1"><b>Highest Bidder:</b> {{ item.highest_bidder_name }}</p>
                             <p class="mb-1"><b>Bid Left:</b> {{ item.max_bids - item.bid_count }}</p>
                             <p class="mb-1"><b>Status:</b> 
                                 {% if item.status == 1 %}

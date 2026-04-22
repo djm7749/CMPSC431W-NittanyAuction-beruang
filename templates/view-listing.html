@@ -17,6 +17,15 @@
             <h3>{{ listing['Product_Name'] }}</h3>
             <div class="mt-2">
                 <p><strong>Seller:</strong> {{ listing['Seller_Email'] }}</p>
+                <p><strong>Seller Rating:</strong> {{ seller_rating['avg_rating'] }}
+                    {% set full = seller_rating['avg_rating']|int %}
+                      {% set half = 1 if seller_rating['avg_rating'] - full >= 0.5 else 0 %}
+                      {% set empty = 5 - full - half %}
+                      {% for _ in range(full) %} ★ {% endfor %}
+                      {% if half %} ☆ {% endif %}
+                      {% for _ in range(empty) %} ☆ {% endfor %}
+                      ({{ seller_rating['total_ratings'] }})
+                </p>
                 <p><strong>Description:</strong> {{ listing['Product_Description'] }}</p>
                 <p><strong>Category:</strong> {{ listing['Category'] }}</p>
                 <p><strong>Maximum Bid:</strong> {{ listing['Max_bids'] }}</p>

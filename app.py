@@ -165,6 +165,7 @@ def seller_dashboard():
     active_role = session.get('active_role')
     status_filter = request.args.get('filter', 'all')
     seller_rows = get_auction_listing(seller_email, status_filter)
+    seller_rating = get_seller_rating(seller_email)
 
     items = []
 
@@ -177,7 +178,7 @@ def seller_dashboard():
             "image": "default-auction.jpg"  # keep frontend unchanged
         })
 
-    return render_template('seller.html', items=items, active_role=active_role, status_filter=status_filter)
+    return render_template('seller.html', items=items, active_role=active_role, status_filter=status_filter, seller_rating=seller_rating)
 
 @app.route('/helpdesk_dashboard')
 def helpdesk_dashboard():
@@ -468,6 +469,10 @@ def view_listing(listing_id):
         .strip()
     )
 
+    listing = get_listing(listing_id)
+    seller = listing["Seller_Email"]
+    seller_rating = get_seller_rating(seller)
+
     # Handle bid submission
     if request.method == 'POST':
 
@@ -479,6 +484,7 @@ def view_listing(listing_id):
 
         listing = get_listing(listing_id)
         seller = listing["Seller_Email"]
+        seller_rating = get_seller_rating(seller)
 
         # Get bid price from form and convert to float
         bid_price = float(request.form['bid_price'])
@@ -491,12 +497,12 @@ def view_listing(listing_id):
         # 1. Check if bidder is the seller
         if bidder == seller:
             flash("Seller cannot bid on their own listing")
-            return render_template('view-listing.html', listing=listing, bids=get_bids_history(listing_id), highest_bid=highest_bid, active_role=session.get('active_role'), highest_bidder=highest_bidder)
+            return render_template('view-listing.html', listing=listing, bids=get_bids_history(listing_id), highest_bid=highest_bid, active_role=session.get('active_role'), highest_bidder=highest_bidder, seller_rating=seller_rating)
 
         # 2. Check if bidder bid in two consecutive bids
         if bidder == highest_bidder:
             flash("Bidder cannot bid in two consecutive bids")
-            return render_template('view-listing.html', listing=listing, bids=get_bids_history(listing_id), highest_bid=highest_bid, active_role=session.get('active_role'), highest_bidder=highest_bidder)
+            return render_template('view-listing.html', listing=listing, bids=get_bids_history(listing_id), highest_bid=highest_bid, active_role=session.get('active_role'), highest_bidder=highest_bidder, seller_rating=seller_rating)
 
         # 3. Check if bid is higher than reserve price and current highest bid
         if highest_bid is not None and bid_price <= highest_bid:
@@ -504,28 +510,28 @@ def view_listing(listing_id):
             # 3(a)Check if bid is higher than reserve price
             if bid_price < reserve_price:
                 flash("Bid must be higher than reserve price")
-                return render_template('view-listing.html', listing=listing, bids=get_bids_history(listing_id), highest_bid=highest_bid, active_role=session.get('active_role'), highest_bidder=highest_bidder)
+                return render_template('view-listing.html', listing=listing, bids=get_bids_history(listing_id), highest_bid=highest_bid, active_role=session.get('active_role'), highest_bidder=highest_bidder, seller_rating=seller_rating)
 
             # 3(b) Bid is higher than reserve price but not higher than current highest bid
             flash("Bid must be higher than the latest bid")
-            return render_template('view-listing.html', listing=listing, bids=get_bids_history(listing_id), highest_bid=highest_bid, active_role=session.get('active_role'), highest_bidder=highest_bidder  )
+            return render_template('view-listing.html', listing=listing, bids=get_bids_history(listing_id), highest_bid=highest_bid, active_role=session.get('active_role'), highest_bidder=highest_bidder, seller_rating=seller_rating)
 
         # 4. If there are no bids yet, check if bid is higher than reserve price
         if highest_bid is None and bid_price < reserve_price:
             flash("Bid must be higher than reserve price")
-            return render_template('view-listing.html', listing=listing, bids=get_bids_history(listing_id), highest_bid=highest_bid, active_role=session.get('active_role'), highest_bidder=highest_bidder)
+            return render_template('view-listing.html', listing=listing, bids=get_bids_history(listing_id), highest_bid=highest_bid, active_role=session.get('active_role'), highest_bidder=highest_bidder, seller_rating=seller_rating)
 
         # 5. Check if max bids has been reached
         max_bids = listing["Max_Bids"]
         bid_count = get_bid_count(seller, listing_id)
         if bid_count >= max_bids:
             flash("Maximum number of bids reached for this listing")
-            return render_template('view-listing.html', listing=listing, bids=get_bids_history(listing_id), highest_bid=highest_bid, active_role=session.get('active_role'), highest_bidder=highest_bidder)
+            return render_template('view-listing.html', listing=listing, bids=get_bids_history(listing_id), highest_bid=highest_bid, active_role=session.get('active_role'), highest_bidder=highest_bidder, seller_rating=seller_rating)
 
         # 6. Check if user is a bidder, seller cannot bit
         if session.get('active_role') != "Bidder":
             flash("Only bidders can place bids")
-            return render_template('view-listing.html', listing=listing, bids=get_bids_history(listing_id), highest_bid=highest_bid, active_role=session.get('active_role'), highest_bidder=highest_bidder)
+            return render_template('view-listing.html', listing=listing, bids=get_bids_history(listing_id), highest_bid=highest_bid, active_role=session.get('active_role'), highest_bidder=highest_bidder, seller_rating=seller_rating)
         
 
         place_bid(listing_id, bidder, bid_price)
@@ -543,7 +549,7 @@ def view_listing(listing_id):
 
 
 
-        return render_template('view-listing.html', listing=listing, bids=get_bids_history(listing_id), highest_bid=highest_bid, active_role=session.get('active_role'), highest_bidder=highest_bidder)
+        return render_template('view-listing.html', listing=listing, bids=get_bids_history(listing_id), highest_bid=highest_bid, active_role=session.get('active_role'), highest_bidder=highest_bidder, seller_rating=seller_rating)
 
     # Get the highest bid and bidder for table display
     bids = get_bids_history(listing_id)
@@ -554,7 +560,7 @@ def view_listing(listing_id):
         highest_bid = bids[0]['Bid_Price']
         highest_bidder = bids[0]['Bidder_email']
 
-    return render_template('view-listing.html', listing=listing, bids=get_bids_history(listing_id), highest_bid=highest_bid, active_role=session.get('active_role'), highest_bidder=highest_bidder)
+    return render_template('view-listing.html', listing=listing, bids=get_bids_history(listing_id), highest_bid=highest_bid, active_role=session.get('active_role'), highest_bidder=highest_bidder, seller_rating=seller_rating)
 
 @app.route('/payment/<seller_email>/<int:listing_id>')
 def payment(seller_email, listing_id):

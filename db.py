@@ -792,3 +792,23 @@ def get_bidder_display_name(bidder_email):
 
     return bidder_email
 
+
+def get_seller_rating(seller_email):
+    conn = db_connect()
+    cur = conn.cursor()
+    cur.execute("""
+        SELECT AVG(Rating) AS avg_rating, COUNT(*) AS total_ratings
+        FROM Rating
+        WHERE Seller_Email = ?
+    """, (seller_email,))
+
+    rating_row = cur.fetchone()
+    conn.close()
+
+    avg_rating = rating_row["avg_rating"]
+    total_ratings = rating_row["total_ratings"]
+
+    if avg_rating is None:
+        avg_rating = 0
+
+    return {"avg_rating": round(avg_rating,1),  "total_ratings":total_ratings}

@@ -815,3 +815,33 @@ def generate_unique_address_id(cur):
         if not cur.fetchone():
             return address_id
 
+
+def get_seller_rating(seller_email):
+    conn = db_connect()
+    cur = conn.cursor()
+    cur.execute("""
+        SELECT AVG(Rating) AS avg_rating, COUNT(*) AS total_ratings
+        FROM Rating
+        WHERE Seller_Email = ?
+    """, (seller_email,))
+
+    rating_row = cur.fetchone()
+    conn.close()
+
+    avg_rating = rating_row["avg_rating"]
+    total_ratings = rating_row["total_ratings"]
+
+    if avg_rating is None:
+        avg_rating = 0
+
+    return {"avg_rating": round(avg_rating,1),  "total_ratings":total_ratings}
+
+def store_rating(bidder_email, seller_email, rating, rating_desc):
+    conn = db_connect()
+    cur = conn.cursor()
+    cur.execute("""
+        INSERT INTO Rating (Bidder_Email, Seller_Email, Date, Rating, Rating_Desc)
+        VALUES (?, ?, DATE('now'), ?, ?)
+    """, (bidder_email, seller_email, rating, rating_desc))
+    conn.commit()
+    conn.close()

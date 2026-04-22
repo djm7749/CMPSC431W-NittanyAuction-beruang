@@ -10,6 +10,18 @@
             <h2>My Auctions</h2>
             <a href="/seller_dashboard/create_auction" class="btn btn-success">Create New Auction</a>
         </div>
+        <div class="mb-3">
+            <h5>
+                <strong>Seller Rating:</strong> {{ seller_rating['avg_rating'] }}
+                {% set full = seller_rating['avg_rating']|int %}
+                  {% set half = 1 if seller_rating['avg_rating'] - full >= 0.5 else 0 %}
+                  {% set empty = 5 - full - half %}
+                  {% for _ in range(full) %} ★ {% endfor %}
+                  {% if half %} ☆ {% endif %}
+                  {% for _ in range(empty) %} ☆ {% endfor %}
+                  ({{ seller_rating['total_ratings'] }})
+            </h5>
+        </div>
 
         <!-- <p>Here you can create and manage your auctions.</p> -->
         <form method="GET" action="{{ url_for('seller_dashboard') }}">

@@ -46,6 +46,10 @@
                                     <a href="{{ url_for('payment', seller_email=item.seller_email, listing_id=item.listing_id) }}" class="btn btn-warning ">Continue Payment</a>
                                 {% endif %}
                             {% endif %}
+                            {% if item.status == 2 and item.is_winner %}
+                                <a href="{{ url_for('rating', seller_email=item.seller_email, listing_id=item.listing_id)}}" class="btn btn-success ">Rate A Seller</a>
+                            {% endif %}
+
                         </div>
 
 

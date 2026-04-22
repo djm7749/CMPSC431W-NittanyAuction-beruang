@@ -120,9 +120,15 @@ def bidder_dashboard():
 
     items = []
 
+    
+
     for auction in auction_rows:
         # listing = get_auction_listing_by_id(bidder, auction["Listing_ID"])
         listing = get_listing(auction["Listing_ID"])
+
+        bid = get_bids_history(auction["Listing_ID"])
+        bid_count = len(bid)
+        # bid_count = get_bid_count(bidder, auction["Listing_ID"])
 
         if listing:
             status = listing["Status"]
@@ -134,15 +140,15 @@ def bidder_dashboard():
         if highest_bidder == bidder:
             highest_bidder = "You"
 
-        
-
         items.append({
             "listing_id": auction["Listing_ID"],
             "name": auction["name"],
             "price": auction["Bid_Price"] if auction["Bid_Price"] else 0,
             "highest_bidder": highest_bidder,
             "status": status,
-            "image": "default-auction.jpg"
+            "image": "default-auction.jpg",
+            "max_bids": listing["Max_bids"],
+            "bid_count": bid_count
         })
 
     return render_template('bidder.html', items=items, active_role=active_role)

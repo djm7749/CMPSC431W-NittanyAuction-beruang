@@ -771,39 +771,24 @@ def get_seller_display_name(seller_email):
 
     return seller_email
 
+def get_bidder_display_name(bidder_email):
+    conn = db_connect()
+    cur = conn.cursor()
 
+    cur.execute("""
+        SELECT first_name, last_name
+        FROM Bidders
+        WHERE email = ?
+    """, (bidder_email,))
+    row = cur.fetchone()
+    conn.close()
 
-# def get_bidder_auctions(bidder_email):
-#     conn = db_connect()
-#     cur = conn.cursor()
+    if row:
+        first_name = row["first_name"] or ""
+        last_name = row["last_name"] or ""
+        full_name = f"{first_name} {last_name}".strip()
+        if full_name:
+            return full_name
 
-#     cur.execute("""
-#         SELECT 
-#             a.Listing_ID,
-#             a.Product_Name AS name,
-#             a.Category,
-#             a.Seller_Email,
-
-#             (SELECT MAX(Bid_Price)
-#              FROM Bids b1
-#              WHERE b1.Listing_ID = a.Listing_ID) AS highest_bid,
-
-#             (SELECT Bidder_Email
-#              FROM Bids b2
-#              WHERE b2.Listing_ID = a.Listing_ID
-#              ORDER BY b2.Bid_Price DESC
-#              LIMIT 1) AS highest_bidder
-
-#         FROM Auction_Listings a
-#         WHERE a.Listing_ID IN (
-#             SELECT Listing_ID
-#             FROM Bids
-#             WHERE Bidder_Email = ?
-#         )
-#         GROUP BY a.Listing_ID
-#     """, (bidder_email,))
-
-#     rows = cur.fetchall()
-#     conn.close()
-#     return rows
+    return bidder_email
 

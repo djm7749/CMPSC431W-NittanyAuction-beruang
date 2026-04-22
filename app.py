@@ -707,35 +707,45 @@ def add_category():
         parent = request.form['parent_category'].strip()
 
         if new_name:
-
-            # avoid duplicates
+            # case-insensitive duplicate check
             cur.execute("""
                 SELECT *
                 FROM Categories
-                WHERE category_name = ?
+                WHERE LOWER(TRIM(category_name)) =
+                      LOWER(TRIM(?))
             """, (new_name,))
 
             exists = cur.fetchone()
 
-            if not exists:
+            if exists:
+                conn.close()
+                return render_template(
+                    "add_category.html",
+                    categories=categories,
+                    error="Category already exists."
+                )
 
-                cur.execute("""
-                    INSERT INTO Categories
-                    (
-                        category_name,
-                        parent_category
-                    )
-                    VALUES (?, ?)
-                """, (
-                    new_name,
-                    parent if parent else None
-                ))
+            # insert new category
+            cur.execute("""
+                INSERT INTO Categories
+                (
+                    category_name,
+                    parent_category
+                )
+                VALUES (?, ?)
+            """, (
+                new_name,
+                parent if parent else None
+            ))
 
-                conn.commit()
+            conn.commit()
 
         conn.close()
 
-        return redirect(url_for('helpdesk_dashboard'))
+        return render_template(
+            "add_category.html",
+            categories=categories,
+            success="Category added successfully.")
 
     conn.close()
 

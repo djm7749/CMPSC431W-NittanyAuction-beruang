@@ -16,15 +16,18 @@
             <div class="d-flex">
                 {%  if active_role == 'Bidder' %}
                     <a href="/bidder_dashboard" class="nav-link text-dark">My Bids</a>
+                    <a href="/apply_seller" class="nav-link text-dark">Apply For Seller</a>
                 {% elif active_role == 'Seller' %}
-                    <a href="/seller_dashboard" class="nav-link text-dark">My Listings</a>
+                    <a href="/seller_dashboard" class="nav-link text-dark">My Listings
                 {% endif %}
                 <a href="/browse" class="nav-link text-dark">Browse</a>
             </div>
 
+            <a href="/my_requests" class="nav-link text-dark">Requests</a>
+
             <div class="ml-auto">
                 <a href="/account" class="btn btn-primary mr-2">Account</a>
-                <a href="/" class="btn btn-outline-secondary">Logout</a>
+                <a href="/logout" class="btn btn-outline-secondary">Logout</a>
             </div>
         </div>
     </nav>

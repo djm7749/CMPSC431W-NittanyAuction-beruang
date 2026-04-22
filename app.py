@@ -462,52 +462,62 @@ def add_category():
     conn = db_connect()
     cur = conn.cursor()
 
-    # load existing categories
+    # load categories
     cur.execute("""
         SELECT *
         FROM Categories
         ORDER BY category_name
     """)
-
     categories = cur.fetchall()
 
-
-    # submit new categories
+    # -----------------------------------
+    # SUBMIT
+    # -----------------------------------
     if request.method == 'POST':
 
         new_name = request.form['category_name'].strip()
         parent = request.form['parent_category'].strip()
 
         if new_name:
-
-            # avoid duplicates
+            # case-insensitive duplicate check
             cur.execute("""
                 SELECT *
                 FROM Categories
-                WHERE category_name = ?
+                WHERE LOWER(TRIM(category_name)) =
+                      LOWER(TRIM(?))
             """, (new_name,))
 
             exists = cur.fetchone()
 
-            if not exists:
+            if exists:
+                conn.close()
+                return render_template(
+                    "add_category.html",
+                    categories=categories,
+                    error="Category already exists."
+                )
 
-                cur.execute("""
-                    INSERT INTO Categories
-                    (
-                        category_name,
-                        parent_category
-                    )
-                    VALUES (?, ?)
-                """, (
-                    new_name,
-                    parent if parent else None
-                ))
+            # insert new category
+            cur.execute("""
+                INSERT INTO Categories
+                (
+                    category_name,
+                    parent_category
+                )
+                VALUES (?, ?)
+            """, (
+                new_name,
+                parent if parent else None
+            ))
 
-                conn.commit()
+            conn.commit()
 
         conn.close()
 
-        return redirect(url_for('helpdesk_dashboard'))
+        return render_template(
+            "add_category.html",
+            categories=categories,
+            success="Category added successfully.")
 
     conn.close()
 
@@ -671,10 +681,10 @@ def approve_request(request_id):
     # mark request completed
     cur.execute("""
         UPDATE Requests
-        SET request_status = 1,
+        SET request_status = 1
         WHERE request_id = ?
     """, (
-        request_id
+        request_id,
     ))
 
     conn.commit()
@@ -732,6 +742,148 @@ def remove_vendor(vendor_email):
 
     return redirect(url_for('helpdesk_dashboard'))
 
+@app.route('/my_requests')
+def my_requests():
+
+    if 'user_email' not in session:
+        return redirect(url_for('login'))
+
+    email = session['user_email']
+
+    conn = db_connect()
+    cur = conn.cursor()
+
+    cur.execute("""
+        SELECT *
+        FROM Requests
+        WHERE sender_email = ?
+        ORDER BY request_id DESC
+    """, (email,))
+
+    requests = cur.fetchall()
+
+    conn.close()
+
+    return render_template(
+        "my_requests.html",
+        requests=requests
+    )
+
+@app.route('/new_request', methods=['GET', 'POST'])
+def new_request():
+
+    if 'user_email' not in session:
+        return redirect(url_for('login'))
+
+    email = session['user_email']
+
+    conn = db_connect()
+    cur = conn.cursor()
+
+    # load helpdesk emails
+    cur.execute("""
+        SELECT email
+        FROM Helpdesk
+        ORDER BY email
+    """)
+
+    helpdesks = cur.fetchall()
+
+    #entering request and save to table
+    if request.method == 'POST':
+
+        request_type = request.form['request_type'].strip()
+        description = request.form['description'].strip()
+        assigned_email = request.form['helpdesk_email'].strip()
+
+        cur.execute("SELECT MAX(request_id) FROM Requests")
+        row = cur.fetchone()
+
+        request_id = 1 if row[0] is None else row[0] + 1
+
+        cur.execute("""
+            INSERT INTO Requests
+            (
+                request_id,
+                sender_email,
+                helpdesk_staff_email,
+                request_type,
+                request_desc,
+                request_status
+            )
+            VALUES (?, ?, ?, ?, ?, ?)
+        """, (
+            request_id,
+            email,
+            assigned_email,
+            request_type,
+            description,
+            0
+        ))
+
+        conn.commit()
+        conn.close()
+
+        return redirect(url_for('my_requests'))
+
+    conn.close()
+
+    return render_template(
+        "new_request.html",
+        helpdesks=helpdesks
+    )
+
+@app.route('/apply_seller', methods=['GET', 'POST'])
+def apply_seller():
+
+    if 'user_email' not in session:
+        return redirect(url_for('login'))
+
+    email = session['user_email']
+
+    conn = db_connect()
+    cur = conn.cursor()
+
+    if request.method == 'POST':
+
+        desc = request.form['description']
+
+        cur.execute("""
+            SELECT MAX(request_id)
+            FROM Requests
+        """)
+
+        row = cur.fetchone()
+        request_id = 1 if row[0] is None else row[0] + 1
+
+        cur.execute("""
+            INSERT INTO Requests
+            (
+                request_id,
+                sender_email,
+                helpdesk_staff_email,
+                request_type,
+                request_desc,
+                request_status
+            )
+            VALUES (?, ?, ?, ?, ?, ?)
+        """, (
+            request_id,
+            email,
+            "helpdeskteam@lsu.edu",
+            "SellerApplication",
+            desc,
+            0
+        ))
+
+        conn.commit()
+        conn.close()
+
+        return redirect(url_for('bidder_dashboard'))
+
+    conn.close()
+
+    return render_template("apply_seller.html")
 
 if __name__ == '__main__':
     app.run(debug=True)         # Set debug=True for development to allow auto-reloading 

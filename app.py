@@ -303,7 +303,12 @@ def browse():
 
     categories = get_categories(selected_category if selected_category else None)
 
-    auction_rows, total_items = get_browse_items(q, per_page, offset, selected_category)
+    # Only fetch items if user searches or selects category
+    if q or selected_category:
+        auction_rows, total_items = get_browse_items(q, per_page, offset, selected_category)
+    else:
+        auction_rows = []
+        total_items = 0
 
     # Convert data
     items = []

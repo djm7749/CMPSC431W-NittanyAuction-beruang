@@ -146,6 +146,7 @@ def bidder_dashboard():
 
         items.append({
             "listing_id": auction["Listing_ID"],
+            "seller_email": listing["Seller_Email"],
             "name": auction["name"],
             "price": auction["Bid_Price"] if auction["Bid_Price"] else 0,
             "highest_bidder": highest_bidder,
@@ -153,7 +154,8 @@ def bidder_dashboard():
             "status": status,
             "image": "default-auction.jpg",
             "max_bids": listing["Max_bids"],
-            "bid_count": bid_count
+            "bid_count": bid_count,
+            "is_winner": (highest_bidder == bidder)
         })
 
     return render_template('bidder.html', items=items, active_role=active_role)
@@ -248,6 +250,9 @@ def seller_listing_detail(listing_id):
         edit_blocked = True
         edit_message = "This listing is inactive and can no longer be edited."
         removal_info = get_listing_removal(seller_email,listing_id)
+    elif listing["Status"] == 3:
+        edit_blocked = True
+        edit_message = "This listing is in pending payment and can no longer be edited."
 
     return render_template(
         'listing_details.html',listing=listing,bid_count=bid_count,reserve_price_value=reserve_price_value,edit_blocked=edit_blocked,edit_message=edit_message,active_role=active_role,categories=category_options,removal_info=removal_info)
@@ -538,6 +543,7 @@ def view_listing(listing_id):
 
         # 7. win the auction
         if new_bid_count == max_bids:
+            mark_listing_pending_payment(seller,listing_id)
             return redirect(url_for('payment', seller_email=seller, listing_id=listing_id))
             # flash("Congratulations! You have won the auction!")
 
@@ -558,13 +564,24 @@ def view_listing(listing_id):
 
 @app.route('/payment/<seller_email>/<int:listing_id>')
 def payment(seller_email, listing_id):
+    active_role = session.get('active_role')
     user_email = session.get('user_email')
+    highest_bidder = get_highest_bidder(listing_id)
+
+    if user_email != highest_bidder:
+        flash("Only the winning bidder can complete payment.")
+        return redirect(url_for('bidder_dashboard'))
+
     seller_name = get_seller_display_name(seller_email)
 
     # retrieve listing
     listing = get_auction_listing_by_id(seller_email,listing_id)
     if not listing:
         return "Listing not found",404
+
+    if listing["Status"] != 3:
+        flash("This listing is not awaiting payment.")
+        return redirect(url_for('bidder_dashboard'))
 
     # retrieve user credit cards
     cards = get_user_credit_cards(user_email)
@@ -584,17 +601,30 @@ def payment(seller_email, listing_id):
         final_price=final_price,
         show_add_form=show_add_form,
         selected_card=selected_card,
-        error=None
+        error=None,
+        active_role=active_role
     )
 
 @app.route('/payment/<seller_email>/<int:listing_id>/save_card', methods=['POST'])
 def save_card(seller_email, listing_id):
+    active_role = session.get('active_role')
     user_email = session.get('user_email')
+    highest_bidder = get_highest_bidder(listing_id)
+
+    if user_email != highest_bidder:
+        flash("Only the winning bidder can complete payment.")
+        return redirect(url_for('bidder_dashboard'))
+
     seller_name = get_seller_display_name(seller_email)
 
     listing = get_auction_listing_by_id(seller_email, listing_id)
     if not listing:
         return "Listing not found", 404
+
+    if listing["Status"] != 3:
+        flash("This listing is not awaiting payment.")
+        return redirect(url_for('bidder_dashboard'))
+
 
     cards = get_user_credit_cards(user_email)
     selected_card = cards[0]['credit_card_num'] if cards else None
@@ -634,23 +664,40 @@ def save_card(seller_email, listing_id):
             final_price=final_price,
             show_add_form=True,
             selected_card=selected_card,
-            error=error
+            error=error,
+            active_role=active_role
         )
-
-    create_credit_card(
-        credit_card_num=credit_card_num,
-        card_type=card_type,
-        expire_month=int(expire_month),
-        expire_year=int(expire_year),
-        security_code=security_code,
-        owner_email=user_email
-    )
+    try:
+        create_credit_card(
+            credit_card_num=credit_card_num,
+            card_type=card_type,
+            expire_month=int(expire_month),
+            expire_year=int(expire_year),
+            security_code=security_code,
+            owner_email=user_email
+        )
+    except Exception as e:
+        flash("This credit card is already exist")
+        return redirect(url_for('payment',seller_email=seller_email,listing_id=listing_id))
 
     return redirect(url_for('payment', seller_email=seller_email, listing_id=listing_id))
 
 @app.route('/payment/<seller_email>/<int:listing_id>/submit', methods=['POST'])
 def submit_payment(seller_email, listing_id):
     user_email = session.get('user_email')
+    highest_bidder = get_highest_bidder(listing_id)
+
+    if user_email != highest_bidder:
+        flash("Only the winning bidder can complete payment.")
+        return redirect(url_for('bidder_dashboard'))
+
+    listing = get_auction_listing_by_id(seller_email,listing_id)
+    if not listing:
+        return "Listing not found",404
+
+    if listing["Status"] != 3:
+        flash("This listing is not awaiting payment.")
+        return redirect(url_for('bidder_dashboard'))
 
     final_price = get_highest_bid(listing_id)
 

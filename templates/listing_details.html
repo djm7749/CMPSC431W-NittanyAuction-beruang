@@ -19,6 +19,8 @@
             <span class="badge badge-secondary">Inactive</span>
         {% elif listing['Status'] == 2 %}
             <span class="badge badge-danger">Sold</span>
+        {% elif listing['Status'] == 3 %}
+            <span class="badge badge-warning">Pending Payment</span>
         {% endif %}
     </p>
     <p><strong>Bids Placed:</strong> {{ bid_count }}</p>

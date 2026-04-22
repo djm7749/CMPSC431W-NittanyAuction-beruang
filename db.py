@@ -114,20 +114,20 @@ def update_password(email, password_hash):
     conn.commit()
     conn.close()
 
-def update_bidder(first_name, last_name, age, home_address_id, major, email):
+def update_bidder(first_name, last_name, age, major, email):
     conn = db_connect()
     cur = conn.cursor()
 
     cur.execute("""
                 UPDATE Bidders
-                SET first_name = ?, last_name  = ?, age = ?, home_address_id = ?, major = ?
+                SET first_name = ?, last_name  = ?, age = ?, major = ?
                 WHERE email = ?
-                """, (first_name, last_name, age , home_address_id, major, email))
+                """, (first_name, last_name, age , major, email))
     conn.commit()
     conn.close()
 
 
-def get_active_auctions(limit=8):
+def get_bidder_auctions(bidder_email):
     conn = db_connect()
     cur = conn.cursor()
 
@@ -135,16 +135,25 @@ def get_active_auctions(limit=8):
         SELECT 
             a.Listing_ID,
             a.Product_Name AS name,
-            (
-                SELECT MAX(Bid_Price)
-                FROM Bids b
-                WHERE b.Listing_ID = a.Listing_ID
-            ) AS price
-        FROM Auction_Listings a
-        WHERE a.status = 1
-        ORDER BY a.Listing_ID
-        LIMIT ?
-    """, (limit,))
+            b.Bidder_Email,
+            b.Bid_Price
+
+        FROM Bids b
+        JOIN Auction_Listings a 
+            ON a.Listing_ID = b.Listing_ID
+
+        WHERE b.Bid_Price = (
+            SELECT MAX(b2.Bid_Price)
+            FROM Bids b2
+            WHERE b2.Listing_ID = b.Listing_ID
+        )
+
+        AND a.Listing_ID IN (
+            SELECT Listing_ID 
+            FROM Bids 
+            WHERE Bidder_Email = ?
+        )
+    """, (bidder_email,))
 
     rows = cur.fetchall()
     conn.close()
@@ -270,13 +279,23 @@ def create_auction_listing(seller_email,auction_title,name,description,category,
     conn = db_connect()
     cur = conn.cursor()
 
+    # create a new listing id
+    # idea: get the max value of the listing id for that seller and increment by 1
+    cur.execute("""
+                SELECT MAX(Listing_ID) AS max_id
+                FROM Auction_Listings
+                """)
+
+    row = cur.fetchone()
+    listing_id = (row["max_id"] + 1) if row["max_id"] is not None else 1
+
     cur.execute("""
                 INSERT INTO Auction_Listings
-                (Seller_Email,Auction_Title,Product_Name,Product_Description,Category,
+                (Seller_Email,Listing_ID,Auction_Title,Product_Name,Product_Description,Category,
                  Reserve_Price,Max_bids,Quantity,Status)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?,?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?,?,?)
                 """, (
-                    seller_email,auction_title,name,description,category,
+                    seller_email,listing_id,auction_title,name,description,category,
                     reserve_price,max_bids,quantity,1
                 ))
 
@@ -310,10 +329,10 @@ def get_bid_count(seller_email,listing_id):
                   AND Listing_ID = ?
                 """, (seller_email, listing_id))
 
-    result = cur.fetchone()
-    conn.close()
+    # result = cur.fetchone()
+    # conn.close()
 
-    return result["bid_count"] if result else 0
+    return cur.fetchone()["bid_count"]
 
 def update_auction_listing(seller_email, listing_id, product_name, product_description,
                            category, reserve_price, quantity, max_bids):
@@ -364,3 +383,427 @@ def get_category_path(category):
 
     conn.close()
     return path
+
+def mark_listing_unactive(seller_email,listing_id, removal_reason):
+    conn = db_connect()
+    cur = conn.cursor()
+
+    listing = get_auction_listing_by_id(seller_email, listing_id)
+    bid_count = get_bid_count(seller_email, listing_id)
+
+    # compute remaining bids
+    remaining_bids = max(0, listing["Max_bids"] - bid_count)
+
+    # insert into audit table
+    cur.execute("""
+                INSERT INTO Listings_Removal
+                    (Seller_Email, Listing_ID, Removal_Reason, Remaining_Bids)
+                VALUES (?, ?, ?, ?)
+                """, (seller_email, listing_id, removal_reason, remaining_bids))
+
+    # update status → inactive
+    cur.execute("""
+                UPDATE Auction_Listings
+                SET Status = 0
+                WHERE Seller_Email = ?
+                  AND Listing_ID = ?
+                """, (seller_email, listing_id))
+
+    conn.commit()
+    conn.close()
+
+def get_listing_removal(seller_email,listing_id):
+    conn = db_connect()
+    cur = conn.cursor()
+
+    cur.execute("""
+                SELECT Removal_Reason, Remaining_Bids
+                FROM Listings_Removal
+                WHERE Seller_Email = ?
+                  AND Listing_ID = ?
+                """, (seller_email, listing_id))
+
+    row = cur.fetchone()
+    conn.close()
+    return row
+
+def get_listing(listing_id):
+    conn = db_connect()
+    cur = conn.cursor()
+
+    cur.execute("""
+        SELECT *
+        FROM Auction_Listings
+        WHERE Listing_ID = ?
+    """, (listing_id,))
+
+    listing = cur.fetchone()
+    conn.close()
+
+    return listing
+
+def get_bids_history(listing_id):
+    conn = db_connect()
+    cur = conn.cursor()
+
+    cur.execute("""
+        SELECT Bidder_email, Bid_Price
+        FROM Bids
+        WHERE Listing_ID = ?
+        ORDER BY Bid_Price DESC
+    """, (listing_id,))
+
+    bids = cur.fetchall()
+    conn.close()
+
+    return bids
+
+def place_bid(listing_id, bidder_email, bid_price):
+    conn = db_connect()
+    cur = conn.cursor()
+
+    cur.execute("SELECT MAX(Bid_ID) FROM Bids")
+    max_bid_id = cur.fetchone()
+    next_bid_id = (max_bid_id[0] + 1) if max_bid_id[0] is not None else 1
+
+    seller_email = get_listing(listing_id)["Seller_Email"]
+
+    cur.execute("""
+        INSERT INTO Bids (Bid_ID, Listing_ID, Bidder_email, Bid_Price, Seller_Email)
+        VALUES (?, ?, ?, ?, ?)
+    """, (next_bid_id, listing_id, bidder_email, bid_price, seller_email))
+
+    conn.commit()
+    conn.close()
+
+def get_highest_bid(listing_id):
+    conn = db_connect()
+    cur = conn.cursor()
+
+    cur.execute("""
+        SELECT MAX(Bid_Price) AS highest_bid
+        FROM Bids
+        WHERE Listing_ID = ?
+    """, (listing_id,))
+
+    result = cur.fetchone()
+    conn.close()
+
+    if result["highest_bid"] is not None:
+        return result["highest_bid"]
+
+
+
+def get_highest_bidder(listing_id):
+    conn = db_connect()
+    cur = conn.cursor()
+
+    cur.execute("""
+        SELECT Bidder_email
+        FROM Bids
+        WHERE Listing_ID = ?
+        ORDER BY Bid_Price DESC
+        LIMIT 1
+    """, (listing_id,))
+
+    result = cur.fetchone()
+    conn.close()
+
+    if result:
+        return result["Bidder_email"]
+
+def get_user_address_id(email, roles):
+    conn = db_connect()
+    cur = conn.cursor()
+
+    if "Bidder" in roles:
+        cur.execute("""
+            SELECT home_address_id
+            FROM Bidders
+            WHERE email = ?
+        """, (email,))
+    else:
+        cur.execute("""
+            SELECT business_address_id
+            FROM Local_Vendors
+            WHERE email = ?
+        """, (email,))
+
+    address_row = cur.fetchone()
+    address_id = address_row[0]
+
+    conn.close()
+
+    return address_id
+
+def get_user_address(email,roles):
+    conn = db_connect()
+    cur = conn.cursor()
+
+    address_id = get_user_address_id(email, roles)
+    cur.execute("""
+        SELECT zipcode, street_num, street_name
+        FROM Address
+        WHERE address_id = ?
+    """, (address_id,))
+
+    result = cur.fetchone()
+    conn.close()
+    return result
+
+def update_user_address(address_id, street_num, street_name, zipcode):
+    conn = db_connect()
+    cur = conn.cursor()
+
+    cur.execute("""
+        UPDATE Address
+        SET street_num = ?, street_name = ?, zipcode = ?
+        WHERE address_id = ?
+    """, (street_num, street_name,zipcode,address_id))
+
+    conn.commit()
+    conn.close()
+
+def get_user_credit_cards(email):
+    conn = db_connect()
+    cur = conn.cursor()
+
+    cur.execute("""
+        SELECT *
+        FROM Credit_Cards
+        WHERE owner_email = ?
+    """, (email,))
+
+    cards = cur.fetchall()
+    conn.close()
+
+    if not cards:
+        return []
+    return cards
+
+def get_completed_request():
+    conn = db_connect()
+    cur = conn.cursor()
+    cur.execute(""" 
+        SELECT *
+        FROM Requests
+        WHERE request_status = 1
+    """,)
+    completed_requests = cur.fetchall()
+    conn.close()
+
+    if not completed_requests:
+        return []
+    return completed_requests
+
+def get_unassigned_request():
+
+    helpdesk_email = "helpdeskteam@lsu.edu"
+    conn = db_connect()
+    cur = conn.cursor()
+    cur.execute("""
+                SELECT request_id,sender_email,request_type,request_desc
+                FROM Requests
+                WHERE helpdesk_staff_email = ?
+                """, (helpdesk_email,))
+    unassigned_requests = cur.fetchall()
+    conn.close()
+    if not unassigned_requests:
+        return []
+    return unassigned_requests
+
+def get_ongoing_request(email):
+    conn = db_connect()
+    cur = conn.cursor()
+    cur.execute("""
+                SELECT request_id,sender_email,request_type,request_desc
+                FROM Requests
+                WHERE helpdesk_staff_email = ? AND request_status = 0
+                """,(email,))
+    ongoing_request = cur.fetchall()
+    conn.close()
+    if not ongoing_request:
+        return []
+    return ongoing_request
+
+def get_local_vendors():
+    conn = db_connect()
+    cur = conn.cursor()
+    cur.execute("""
+        SELECT *
+        FROM Local_Vendors
+    """,)
+    local_vendors = cur.fetchall()
+    conn.close()
+
+# Claim Request by Changing the helpdesk_staff_email to user claiming the request's email
+def helpdesk_claim_request(email, request_id):
+    conn = db_connect()
+    cur = conn.cursor()
+    cur.execute("""
+        UPDATE Requests
+        SET helpdesk_staff_email = ?
+        WHERE request_id = ?
+    """, (email, request_id))
+    conn.commit()
+    conn.close()
+
+# Complete Request by Changing the request status to 1
+def helpdesk_complete_request(request_id):
+    conn = db_connect()
+    cur = conn.cursor()
+    cur.execute("""
+        UPDATE Requests
+        SET request_status = 1
+        WHERE request_id = ?
+    """, (request_id,))
+    conn.commit()
+    conn.close()
+
+def delete_credit_card(credit_card_num):
+    conn = db_connect()
+    cur = conn.cursor()
+    cur.execute("""
+        DELETE FROM Credit_Cards
+        WHERE credit_card_num = ?
+    """, (credit_card_num,))
+    conn.commit()
+    conn.close()
+
+
+def create_credit_card(credit_card_num, card_type, expire_month, expire_year, security_code, owner_email):
+    conn = db_connect()
+    cur = conn.cursor()
+    cur.execute("""
+                INSERT INTO Credit_Cards
+                (credit_card_num, card_type, expire_month, expire_year, security_code, owner_email)
+                VALUES (?, ?, ?, ?, ?, ?)
+                """, (
+                    credit_card_num, card_type, expire_month, expire_year, security_code, owner_email,))
+    conn.commit()
+    conn.close()
+
+def store_create_request(email, request_type, request_desc):
+    conn = db_connect()
+    cur = conn.cursor()
+
+    # Get Biggest request ID to create new request ID
+    cur.execute("""
+        SELECT MAX(request_id) 
+        FROM Requests
+    """,)
+    result = cur.fetchone()
+
+    # If no request_id (table is empty) create request_id = 1
+    if result[0] is None:
+        next_id = 1
+    else:
+        # Increment request_id by 1 to ensure PK holds
+        next_id = result[0] + 1
+
+    helpdesk_email = "helpdeskteam@lsu.edu"
+    cur.execute("""INSERT INTO Requests (request_id, sender_email,helpdesk_staff_email, request_type, request_desc, request_status)
+        VALUES (?, ?, ?, ?, ?,?)
+    """, (next_id, email, helpdesk_email, request_type, request_desc, 0))
+    conn.commit()
+    conn.close()
+
+
+def create_transaction(seller_email, listing_id, bidder_email, payment_amount):
+    conn = db_connect()
+    cur = conn.cursor()
+
+    cur.execute("SELECT MAX(Transaction_ID) AS max_id FROM Transactions")
+    row = cur.fetchone()
+    next_transaction_id = (row["max_id"] + 1) if row["max_id"] is not None else 1
+
+    cur.execute("""
+        INSERT INTO Transactions (Transaction_ID, Seller_Email, Listing_ID, Bidder_Email, Date, Payment)
+        VALUES (?, ?, ?, ?, DATE('now'), ?)
+    """, (next_transaction_id, seller_email, listing_id, bidder_email, payment_amount))
+
+    conn.commit()
+    conn.close()
+
+def mark_listing_sold(seller_email, listing_id):
+    conn = db_connect()
+    cur = conn.cursor()
+
+    cur.execute("""
+        UPDATE Auction_Listings
+        SET Status = 2
+        WHERE Seller_Email = ? AND Listing_ID = ?
+    """, (seller_email, listing_id))
+
+    conn.commit()
+    conn.close()
+
+def get_seller_display_name(seller_email):
+    conn = db_connect()
+    cur = conn.cursor()
+
+    # First try local vendor
+    cur.execute("""
+        SELECT Business_Name
+        FROM Local_Vendors
+        WHERE Email = ?
+    """, (seller_email,))
+    row = cur.fetchone()
+    if row and row["Business_Name"]:
+        conn.close()
+        return row["Business_Name"]
+
+    # Then try bidder
+    cur.execute("""
+        SELECT first_name, last_name
+        FROM Bidders
+        WHERE email = ?
+    """, (seller_email,))
+    row = cur.fetchone()
+    conn.close()
+
+    if row:
+        first_name = row["first_name"] or ""
+        last_name = row["last_name"] or ""
+        full_name = f"{first_name} {last_name}".strip()
+        if full_name:
+            return full_name
+
+    return seller_email
+
+
+
+# def get_bidder_auctions(bidder_email):
+#     conn = db_connect()
+#     cur = conn.cursor()
+
+#     cur.execute("""
+#         SELECT 
+#             a.Listing_ID,
+#             a.Product_Name AS name,
+#             a.Category,
+#             a.Seller_Email,
+
+#             (SELECT MAX(Bid_Price)
+#              FROM Bids b1
+#              WHERE b1.Listing_ID = a.Listing_ID) AS highest_bid,
+
+#             (SELECT Bidder_Email
+#              FROM Bids b2
+#              WHERE b2.Listing_ID = a.Listing_ID
+#              ORDER BY b2.Bid_Price DESC
+#              LIMIT 1) AS highest_bidder
+
+#         FROM Auction_Listings a
+#         WHERE a.Listing_ID IN (
+#             SELECT Listing_ID
+#             FROM Bids
+#             WHERE Bidder_Email = ?
+#         )
+#         GROUP BY a.Listing_ID
+#     """, (bidder_email,))
+
+#     rows = cur.fetchall()
+#     conn.close()
+#     return rows
+

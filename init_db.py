@@ -179,6 +179,17 @@ def init_db():
         );
     """)
 
+    # Additional Audit Table for listings removal
+    cursor.execute("""
+        CREATE TABLE Listings_Removal (
+        Seller_Email TEXT NOT NULL,
+        Listing_ID INTEGER NOT NULL,
+        Removal_Reason TEXT NOT NULL,
+        Remaining_Bids INTEGER NOT NULL,
+        PRIMARY KEY (Seller_Email, Listing_ID)
+        );
+    """)
+
     print("Tables created.")
 
     # Add helpdeskteam into users

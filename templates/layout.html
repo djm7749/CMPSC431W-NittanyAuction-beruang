@@ -5,8 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title> {% block title %}Nittany Auction {% endblock %} </title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <link rel="icon" href="{{ url_for('static', filename='images/logo.png') }}" type="image/png">
 </head>
-<body>
+<body class="d-flex flex-column min-vh-100">
 
     <nav class="navbar navbar-expand-lg navbar-light bg-light">
         <div class="container-fluid">
@@ -16,10 +18,17 @@
             <div class="d-flex">
                 {%  if active_role == 'Bidder' %}
                     <a href="/bidder_dashboard" class="nav-link text-dark">My Bids</a>
+                    <a href="/browse" class="nav-link text-dark">Browse</a>
+                    <a href="/submit_request" class="nav-link text-dark">Request</a>
                 {% elif active_role == 'Seller' %}
                     <a href="/seller_dashboard" class="nav-link text-dark">My Listings</a>
+                    <a href="/browse" class="nav-link text-dark">Browse</a>
+                    <a href="/submit_request" class="nav-link text-dark">Request</a>
+                {% else %}
+                    <a href="/helpdesk_dashboard" class="nav-link text-dark">My Request</a>
+                    <a href="/add_category" class="nav-link text-dark">Add Category</a>
                 {% endif %}
-                <a href="/browse" class="nav-link text-dark">Browse</a>
+
             </div>
 
             <div class="ml-auto">
@@ -29,12 +38,12 @@
         </div>
     </nav>
 
-    <main>
+    <main class="flex-fill">
         {% block content %}
         {% endblock %}
     </main>
 
-    <footer class="text-center mt-5">
+    <footer class="text-center mt-auto">
         <p> 2026 Nittany Auction Database Project</p>
     </footer>
 

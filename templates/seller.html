@@ -54,6 +54,8 @@
                             <span class="badge badge-secondary">Inactive</span>
                         {% elif item.status == 2 %}
                             <span class="badge badge-danger">Sold</span>
+                        {% elif item.status == 3 %}
+                                <span class="badge badge-warning">Pending Payment</span>
                         {% endif %}
                     </p>
                     <a href="{{ url_for('seller_listing_detail', listing_id=item.listing_id) }}" class="btn btn-primary mt-4">View/Edit auction</a>

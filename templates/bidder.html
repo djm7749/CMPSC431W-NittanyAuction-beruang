@@ -34,11 +34,20 @@
                                     <span class="badge badge-secondary">Inactive</span>
                                 {% elif item.status == 2 %}
                                     <span class="badge badge-danger">Sold</span>
+                                {% elif item.status == 3 %}
+                                    <span class="badge badge-warning">Pending Payment</span>
                                 {% endif %}
                             </p>
                         </div>
+                        <div class="mt-auto">
+                            <a href="{{ url_for('view_listing', listing_id=item['listing_id']) }}" class="btn btn-primary mt-auto mb-2">View Details</a>
+                            {% if item.status == 3 %}
+                                {% if item.is_winner %}
+                                    <a href="{{ url_for('payment', seller_email=item.seller_email, listing_id=item.listing_id) }}" class="btn btn-warning ">Continue Payment</a>
+                                {% endif %}
+                            {% endif %}
+                        </div>
 
-                        <a href="{{ url_for('view_listing', listing_id=item['listing_id']) }}" class="btn btn-primary mt-auto">View Details</a>
 
                     </div>
                 </div>
